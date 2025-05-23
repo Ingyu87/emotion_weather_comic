@@ -44,16 +44,20 @@ st.markdown("""
         background: #3498db !important;
     }
     
-    /* 워터마크 */
+    /* 워터마크 - 더 명확하게 */
     .watermark {
         position: fixed;
-        bottom: 10px;
-        right: 10px;
-        font-size: 10px;
-        color: #999999;
-        opacity: 0.6;
-        z-index: 9999;
+        bottom: 20px;
+        right: 20px;
+        font-size: 12px;
+        color: #666666;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 5px 10px;
+        border-radius: 5px;
+        z-index: 99999;
         pointer-events: none;
+        font-weight: 500;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     
     .stApp {
