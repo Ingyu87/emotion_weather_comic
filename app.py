@@ -202,6 +202,7 @@ def validate_age_group(age_group):
     return age_group in valid_ages
 
 def ask_gemini(prompt, model="models/gemini-1.5-pro-latest"):
+    """Gemini API 호출 (개선된 오류 처리 + 안전 필터링)"""
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/{model}:generateContent?key={GEMINI_API_KEY}"
         headers = {"Content-Type": "application/json"}
@@ -211,10 +212,32 @@ def ask_gemini(prompt, model="models/gemini-1.5-pro-latest"):
         response.raise_for_status()
         
         result = response.json()
-        return result["candidates"][0]["content"]["parts"][0]["text"]
+        generated_text = result["candidates"][0]["content"]["parts"][0]["text"]
         
-    except:
-        return "[오류] API 호출에 실패했습니다."
+        # 생성된 결과에서도 부적절한 내용 필터링
+        inappropriate_words = [
+            "바보", "멍청", "죽어", "꺼져", "시발", "개새", "병신", "미친",
+            "혐오", "차별", "따돌림", "왕따", "괴롭히", "폭력", "때리", "싸우",
+            "비키니", "키스", "연애", "사랑", "섹시", "예쁘", "잘생", "몸매",
+            "담배", "술", "마약", "도박", "자해", "칼", "위험한",
+            "트럼프", "김정은", "윤석열", "문재인", "박근혜", "이재명", 
+            "바이든", "푸틴", "시진핑", "정치인", "대통령", "국회의원"
+        ]
+        
+        for word in inappropriate_words:
+            if word in generated_text:
+                return f"[안전 필터] 부적절한 내용이 생성되어 다시 생성합니다. 안전한 내용으로 대체됩니다."
+        
+        return generated_text
+        
+    except requests.exceptions.Timeout:
+        return "[오류] 요청 시간이 초과되었습니다."
+    except requests.exceptions.RequestException as e:
+        return f"[오류] 네트워크 오류: {str(e)}"
+    except KeyError:
+        return "[오류] API 응답 형식이 올바르지 않습니다."
+    except Exception as e:
+        return f"[오류] 예상치 못한 오류: {str(e)}"
 
 def get_weather():
     try:
