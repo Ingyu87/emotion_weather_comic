@@ -457,7 +457,7 @@ def render_progress_bar(progress):
 init_session_state()
 
 # 현재 call_count와 남은 횟수를 표시하고 싶다면
-remaining_calls = 100 - st.session_state.call_count
+remaining_calls = 50 - st.session_state.call_count
 st.info(f"오늘은 스토리보드를 {st.session_state.call_count}회 생성했어요. {remaining_calls}회 더 생성할 수 있어요!")
 
 if st.session_state.call_count >= 50:
