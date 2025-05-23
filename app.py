@@ -35,23 +35,36 @@ st.markdown("""
         background: #2c3e50 !important;
     }
     
-    /* 버튼 커서 문제 완전 해결 */
+    /* 모든 버튼과 클릭 요소의 커서 문제 완전 해결 */
     .stButton > button, 
-    .stButton > button *, 
+    .stButton > button *,
+    .stButton button,
     button,
     [data-testid="stButton"] > button,
-    [data-testid="stButton"] button {
+    [data-testid="stButton"] button,
+    [data-testid="stButton"],
+    .stButton,
+    div[data-testid="stButton"],
+    div[data-testid="stButton"] > button,
+    .element-container button {
         color: white !important;
         background: #3498db !important;
         cursor: pointer !important;
         pointer-events: auto !important;
+        border: none !important;
     }
     
     .stButton > button:hover, 
     .stButton > button *:hover,
+    .stButton button:hover,
     button:hover,
     [data-testid="stButton"] > button:hover,
-    [data-testid="stButton"] button:hover {
+    [data-testid="stButton"] button:hover,
+    [data-testid="stButton"]:hover,
+    .stButton:hover,
+    div[data-testid="stButton"]:hover,
+    div[data-testid="stButton"] > button:hover,
+    .element-container button:hover {
         cursor: pointer !important;
         background: #2980b9 !important;
         pointer-events: auto !important;
@@ -59,19 +72,36 @@ st.markdown("""
     
     .stButton > button:disabled, 
     .stButton > button:disabled *,
+    .stButton button:disabled,
     button:disabled,
     [data-testid="stButton"] > button:disabled,
-    [data-testid="stButton"] button:disabled {
+    [data-testid="stButton"] button:disabled,
+    div[data-testid="stButton"] > button:disabled,
+    .element-container button:disabled {
         cursor: not-allowed !important;
-        background: #bdc3c7 !important;
-        opacity: 0.6 !important;
+        background: #95a5a6 !important;
+        opacity: 0.5 !important;
+        color: #ffffff !important;
     }
     
-    /* 모든 클릭 가능한 요소들 */
+    /* 라디오 버튼과 모든 클릭 가능한 요소들 */
     [role="button"],
     .stRadio > div,
     .stRadio label,
-    input[type="radio"] {
+    .stRadio,
+    input[type="radio"],
+    .stSelectbox,
+    .stTextInput,
+    .stTextArea {
+        cursor: pointer !important;
+    }
+    
+    /* 전체 앱에서 커서 문제 해결 */
+    * {
+        cursor: default;
+    }
+    
+    button, input, select, textarea, [role="button"], .stButton, [data-testid="stButton"] {
         cursor: pointer !important;
     }
     
