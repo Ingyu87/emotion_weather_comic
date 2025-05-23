@@ -30,8 +30,8 @@ if st.session_state.call_count >= 20:
 # -------------------------------
 # Gemini API 요청 함수
 # -------------------------------
-def ask_gemini(prompt, model="gemini-pro"):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
+def ask_gemini(prompt, model="models/gemini-1.5-pro-latest"):
+    url = f"https://generativelanguage.googleapis.com/v1beta/{model}:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     data = {
         "contents": [
@@ -151,3 +151,4 @@ elif st.session_state.reason:
             st.download_button("📄 생성 결과 PDF 다운로드", f.read(), file_name="emotion_comic.pdf", mime="application/pdf")
 
     st.session_state.call_count += 1
+
