@@ -68,7 +68,7 @@ st.markdown("""
         border-radius: 20px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         margin: 1rem auto;
-        max-width: 900px;
+        max-width: 1200px;
     }
     .main-title {
         text-align: center;
@@ -124,6 +124,18 @@ st.markdown("""
         color: white;
         font-weight: 600;
         font-size: 1rem;
+        cursor: pointer !important;
+    }
+    
+    .stButton > button:hover {
+        cursor: pointer !important;
+        background: #2980b9;
+    }
+    
+    .stButton > button:disabled {
+        cursor: not-allowed !important;
+        background: #bdc3c7;
+        opacity: 0.6;
     }
     .warning-box {
         background: #fff3cd;
@@ -146,6 +158,71 @@ st.markdown("""
         border-radius: 3px;
         margin: 1rem 0;
     }
+    
+    /* 안전 사용 안내 레이아웃 개선 */
+    .safety-guide {
+        display: flex;
+        gap: 2rem;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+    }
+    
+    .safety-guide-left {
+        flex: 1;
+        background: #fff8e1;
+        border: 2px solid #ffc107;
+        border-radius: 15px;
+        padding: 1.5rem;
+    }
+    
+    .safety-guide-right {
+        flex: 1;
+        background: #e8f5e8;
+        border: 2px solid #28a745;
+        border-radius: 15px;
+        padding: 1.5rem;
+    }
+    
+    .safety-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .safety-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .safety-list li {
+        margin-bottom: 0.8rem;
+        padding-left: 1.5rem;
+        position: relative;
+        line-height: 1.4;
+    }
+    
+    .safety-list li:before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        color: #666;
+        font-weight: bold;
+    }
+    
+    .prohibited-list li:before {
+        content: "⚠️";
+        font-size: 1rem;
+    }
+    
+    .recommended-list li:before {
+        content: "✅";
+        font-size: 1rem;
+    }
+    
     /* 화풍 선택 카드 스타일 */
     .art-style-card {
         background: white;
@@ -314,6 +391,19 @@ st.markdown("""
         animation: bounce 2s infinite;
         display: inline-block;
     }
+    
+    /* 반응형 디자인 개선 */
+    @media (max-width: 768px) {
+        .safety-guide {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .main-container {
+            max-width: 95%;
+            padding: 1rem;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -362,6 +452,33 @@ def validate_age_group(age_group):
     valid_ages = ["초등학교 1~2학년", "초등학교 3~4학년", "초등학교 5~6학년", "교사"]
     return age_group in valid_ages
 
+def get_emotion_traffic_light(emotion):
+    """감정 신호등 시스템"""
+    positive_emotions = ["기쁨", "행복", "감사", "뿌듯함", "만족", "희망", "신남", "설렘", "평온", "자신감"]
+    negative_emotions = ["슬픔", "화남", "답답함", "걱정", "두려움", "실망", "부끄러움", "외로움", "스트레스", "짜증"]
+    
+    if emotion in positive_emotions:
+        return {
+            "color": "🟢",
+            "status": "초록불",
+            "message": "건강하고 긍정적인 감정이에요! 이런 감정을 잘 표현하고 나누어보세요.",
+            "css_color": "#28a745"
+        }
+    elif emotion in negative_emotions:
+        return {
+            "color": "🔴", 
+            "status": "빨간불",
+            "message": "힘들고 어려운 감정이네요. 이런 감정은 혼자 담아두지 말고 선생님이나 부모님께 도움을 요청하는 것이 좋아요.",
+            "css_color": "#dc3545"
+        }
+    else:
+        return {
+            "color": "🟡",
+            "status": "노란불", 
+            "message": "복잡한 감정이에요. 천천히 생각해보고 감정을 정리해보세요.",
+            "css_color": "#ffc107"
+        }
+
 def ask_gemini(prompt, model="models/gemini-1.5-pro-latest"):
     """Gemini API 호출 (개선된 오류 처리 + 안전 필터링)"""
     try:
@@ -399,17 +516,6 @@ def ask_gemini(prompt, model="models/gemini-1.5-pro-latest"):
         return "[오류] API 응답 형식이 올바르지 않습니다."
     except Exception as e:
         return f"[오류] 예상치 못한 오류: {str(e)}"
-
-def get_weather():
-    try:
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={WEATHER_API_KEY}&lang=kr&units=metric"
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        
-        data = response.json()
-        return f"{data['weather'][0]['description']}, {data['main']['temp']}°C"
-    except:
-        return "맑음, 20°C"
 
 def fetch_emotions(situation):
     positive_emotions = ["기쁨", "행복", "감사", "뿌듯함", "만족", "희망", "신남", "설렘", "평온", "자신감"]
@@ -457,10 +563,10 @@ render_step_indicator(st.session_state.current_step)
 progress = (st.session_state.current_step - 1) * 25
 render_progress_bar(progress)
 
+# 현재 날짜 표시 - 중앙 정렬로 변경
+current_date = datetime.now().strftime("%Y년 %m월 %d일")
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    # 현재 날짜 표시
-    current_date = datetime.now().strftime("%Y년 %m월 %d일")
     st.metric(
         label=f"🎯 오늘의 생성 횟수 ({current_date})", 
         value=f"{st.session_state.call_count} / 100",
@@ -470,28 +576,36 @@ with col2:
 if st.session_state.current_step == 1:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     
-    # 안전 사용 안내
-    st.warning("🛡️ **안전한 사용을 위한 안내**")
-    
+    # 안전 사용 안내 - 레이아웃 개선
     st.markdown("""
-    **📚 이 도구는 초등학생의 건전한 감정 표현 학습을 위해 만들어졌습니다.**
-    
-    **🚫 다음과 같은 내용은 자동으로 차단됩니다:**
-    - 욕설, 폭언, 혐오 표현
-    - 폭력적이거나 위험한 내용  
-    - 부적절한 성적 표현
-    - 정치적 인물이나 논란적 내용
-    - 의미 없는 글자 나열
-    
-    **✅ 이런 건전한 내용을 사용해주세요:**
-    - 친구와의 우정 이야기
-    - 학교에서의 즐거운 경험
-    - 가족과의 따뜻한 시간
-    - 새로운 것을 배우는 기쁨
-    - 도움을 주고받는 경험
-    """)
-    
-    st.markdown("---")
+    <div class="safety-guide">
+        <div class="safety-guide-left">
+            <div class="safety-title">
+                🚫 이런 내용은 차단돼요
+            </div>
+            <ul class="safety-list prohibited-list">
+                <li>욕설, 폭언, 혐오 표현</li>
+                <li>폭력적이거나 위험한 내용</li>
+                <li>부적절한 성적 표현</li>
+                <li>정치적 인물이나 논란적 내용</li>
+                <li>의미 없는 글자 나열</li>
+            </ul>
+        </div>
+        
+        <div class="safety-guide-right">
+            <div class="safety-title">
+                ✅ 이런 건전한 내용을 사용해주세요
+            </div>
+            <ul class="safety-list recommended-list">
+                <li>친구와의 우정 이야기</li>
+                <li>학교에서의 즐거운 경험</li>
+                <li>가족과의 따뜻한 시간</li>
+                <li>새로운 것을 배우는 기쁨</li>
+                <li>도움을 주고받는 경험</li>
+            </ul>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
     # 시작 안내 메시지
     st.markdown("""
@@ -563,19 +677,6 @@ if st.session_state.current_step == 1:
             
         with current_col:
             style_info = art_styles[style_name]
-            
-            # 선택된 스타일인지 확인
-            is_selected = selected_style == style_name
-            card_class = "selected" if is_selected else ""
-            
-            # 화풍 카드 HTML
-            card_html = f"""
-            <div class="art-style-card {card_class}" onclick="selectStyle('{style_name}')">
-                <span class="art-style-emoji">{style_info['emoji']}</span>
-                <div class="art-style-title">{style_name}</div>
-                <div class="art-style-desc">{style_info['desc']}</div>
-            </div>
-            """
             
             if st.button(f"{style_info['emoji']} {style_name}", key=f"style_{style_name}", use_container_width=True):
                 st.session_state.art_style = style_name
@@ -771,18 +872,7 @@ elif st.session_state.current_step == 2:
             st.session_state.current_step = 1
             st.rerun()
     
-    st.markdown("---")
-    
-    # 특별한 다음 단계 버튼
-    st.markdown("""
-    <div class="next-step-container">
-        <div class="next-step-emoji">📝</div>
-        <div class="next-step-text">좋은 상황 설명이에요! 이제 감정을 선택해볼까요?</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([2, 3, 2])
-    with col2:
+    with col3:
         if st.button("🎭 감정 선택하러 가기! 🎭", disabled=not situation_valid, key="step2_next", use_container_width=True):
             if situation_valid:
                 # 최종 AI 검증 (더 정확한 검사)
@@ -797,6 +887,16 @@ elif st.session_state.current_step == 2:
                     st.error(message)
             else:
                 st.error("적절한 상황을 입력해주세요!")
+    
+    st.markdown("---")
+    
+    # 특별한 다음 단계 버튼
+    st.markdown("""
+    <div class="next-step-container">
+        <div class="next-step-emoji">📝</div>
+        <div class="next-step-text">좋은 상황 설명이에요! 이제 감정을 선택해볼까요?</div>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -938,18 +1038,7 @@ elif st.session_state.current_step == 4:
             st.session_state.current_step = 3
             st.rerun()
     
-    st.markdown("---")
-    
-    # 특별한 다음 단계 버튼
-    st.markdown("""
-    <div class="next-step-container">
-        <div class="next-step-emoji">🎨</div>
-        <div class="next-step-text">감정의 이유까지 완성! 이제 멋진 스토리보드를 만들어볼까요?</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 4, 1])
-    with col2:
+    with col3:
         if st.button("🎬 스토리보드 만들기! 🎬", disabled=not reason_valid, key="step4_final", use_container_width=True):
             if reason_valid:
                 is_valid, message = validate_text_input(reason, min_length=5, max_length=150, field_name="감정의 이유")
@@ -962,6 +1051,16 @@ elif st.session_state.current_step == 4:
                     st.error(message)
             else:
                 st.error("적절한 이유를 입력해주세요!")
+    
+    st.markdown("---")
+    
+    # 특별한 다음 단계 버튼
+    st.markdown("""
+    <div class="next-step-container">
+        <div class="next-step-emoji">🎨</div>
+        <div class="next-step-text">감정의 이유까지 완성! 이제 멋진 스토리보드를 만들어볼까요?</div>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -998,7 +1097,6 @@ elif st.session_state.current_step == 5:
 상황: {st.session_state.situation}
 감정: {st.session_state.emotion}
 이유: {st.session_state.reason}
-날씨: {weather}
 
 위 정보를 바탕으로 4컷 만화의 각 장면을 간단명료하게 설명해주세요.
 각 장면은 한 문장으로, 번호와 함께 작성해주세요.
