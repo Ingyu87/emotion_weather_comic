@@ -621,8 +621,10 @@ import re
 from datetime import datetime
 import time
 
+# 시크릿 키 불러오기
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
 
+# 페이지 설정
 st.set_page_config(
     page_title="4컷 만화 스토리보드 생성기", 
     page_icon="📋", 
