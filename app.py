@@ -31,7 +31,13 @@ def generate_image(prompt):
         "Authorization": f"Bearer {DALL_E_API_KEY}",
         "Content-Type": "application/json"
     }
-    data = {"model": "dall-e-3", "prompt": prompt, "n": 1, "size": "1024x1024"}
+    data = {
+        "model": "dall-e-3",
+        "prompt": prompt,
+        "n": 1,
+        "size": "1024x1024",
+        "response_format": "url"
+    }
     response = requests.post(url, headers=headers, json=data)
     if response.status_code == 200:
         return response.json()["data"][0]["url"]
@@ -83,7 +89,7 @@ elif not st.session_state.situation:
 elif not st.session_state.emotion:
     st.subheader("😊 이 상황에서 느낀 감정을 골라보세요")
     prompt = (
-        f"{st.session_state.age_group}이(가) 겪은 다음 상황에 대해 느낄 수 있는 감정 단어 10개를 콤마로 구분해서 제시해줘. "
+        f"{st.session_state.age_group}이(가) 겪은 다음 상황에 대해 느낄 수 있는 긍정적 감정 5개와 부정적 감정 5개를 콤마로 구분해서 제시해줘. "
         f"감정 이름만 간단히 제시해. 상황: {st.session_state.situation}"
     )
     raw = ask_gemini(prompt)
