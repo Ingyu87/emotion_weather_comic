@@ -575,8 +575,6 @@ if st.session_state.current_step == 1:
         )
 
 if st.session_state.current_step == 1:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    
     # 안전 사용 안내 - 레이아웃 개선
     st.markdown("""
     <div class="safety-guide">
@@ -618,6 +616,8 @@ if st.session_state.current_step == 1:
         </p>
     </div>
     """, unsafe_allow_html=True)
+    
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     
     # 안전 사용 안내 - 레이아웃 개선
     st.markdown("""
