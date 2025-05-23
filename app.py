@@ -222,8 +222,97 @@ st.markdown("""
         100% { opacity: 1; transform: scale(1); }
     }
     
-    .success-animation {
-        animation: fadeInScale 0.5s ease-out;
+    /* 특별한 다음 단계 버튼 */
+    .next-step-button {
+        background: linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4, #FFEAA7);
+        background-size: 300% 300%;
+        animation: gradientShift 3s ease infinite;
+        border: none;
+        border-radius: 50px;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+        padding: 1rem 2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .next-step-button:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.3);
+        animation-duration: 1s;
+    }
+    
+    .next-step-button:active {
+        transform: translateY(-1px) scale(1.02);
+    }
+    
+    .next-step-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .next-step-button:hover::before {
+        left: 100%;
+    }
+    
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    /* 다음 단계 컨테이너 */
+    .next-step-container {
+        text-align: center;
+        padding: 2rem;
+        margin-top: 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .next-step-container::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: rotate 20s linear infinite;
+    }
+    
+    @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .next-step-text {
+        color: white;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .next-step-emoji {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        animation: bounce 2s infinite;
+        display: inline-block;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -505,9 +594,20 @@ if st.session_state.current_step == 1:
         </div>
         """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns([3, 1])
+    
+    st.markdown("---")
+    
+    # 특별한 다음 단계 버튼
+    st.markdown("""
+    <div class="next-step-container">
+        <div class="next-step-emoji">🚀</div>
+        <div class="next-step-text">모든 정보가 준비되었어요! 다음 단계로 넘어가 볼까요?</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([2, 3, 2])
     with col2:
-        if st.button("다음 단계 ➡️", key="step1_next"):
+        if st.button("✨ 다음 단계로 GO! ✨", key="step1_next", use_container_width=True):
             if validate_age_group(selected_age) and gender and st.session_state.get('art_style'):
                 st.session_state.age_group = selected_age
                 st.session_state.gender = gender
@@ -522,6 +622,7 @@ if st.session_state.current_step == 1:
                 if not st.session_state.get('art_style'):
                     missing.append("화풍")
                 st.error(f"{'과 '.join(missing)}을 선택해주세요!")
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif st.session_state.current_step == 2:
@@ -670,8 +771,19 @@ elif st.session_state.current_step == 2:
             st.session_state.current_step = 1
             st.rerun()
     
-    with col3:
-        if st.button("다음 단계 ➡️", disabled=not situation_valid, key="step2_next"):
+    st.markdown("---")
+    
+    # 특별한 다음 단계 버튼
+    st.markdown("""
+    <div class="next-step-container">
+        <div class="next-step-emoji">📝</div>
+        <div class="next-step-text">좋은 상황 설명이에요! 이제 감정을 선택해볼까요?</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([2, 3, 2])
+    with col2:
+        if st.button("🎭 감정 선택하러 가기! 🎭", disabled=not situation_valid, key="step2_next", use_container_width=True):
             if situation_valid:
                 # 최종 AI 검증 (더 정확한 검사)
                 is_valid, message = validate_text_input(situation, min_length=10, max_length=200, field_name="상황 설명")
@@ -826,8 +938,19 @@ elif st.session_state.current_step == 4:
             st.session_state.current_step = 3
             st.rerun()
     
-    with col3:
-        if st.button("🎨 스토리보드 생성하기!", disabled=not reason_valid, key="step4_final"):
+    st.markdown("---")
+    
+    # 특별한 다음 단계 버튼
+    st.markdown("""
+    <div class="next-step-container">
+        <div class="next-step-emoji">🎨</div>
+        <div class="next-step-text">감정의 이유까지 완성! 이제 멋진 스토리보드를 만들어볼까요?</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 4, 1])
+    with col2:
+        if st.button("🎬 스토리보드 만들기! 🎬", disabled=not reason_valid, key="step4_final", use_container_width=True):
             if reason_valid:
                 is_valid, message = validate_text_input(reason, min_length=5, max_length=150, field_name="감정의 이유")
                 if is_valid:
