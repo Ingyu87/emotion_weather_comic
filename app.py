@@ -24,19 +24,20 @@ st.markdown("""
 <style>
     /* 전체 배경 및 폰트 */
     .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         font-family: 'Noto Sans KR', sans-serif;
     }
     
     /* 메인 컨테이너 */
     .main-container {
-        background: rgba(255, 255, 255, 0.95);
+        background: rgba(255, 255, 255, 0.98);
         padding: 2rem;
         border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         margin: 1rem auto;
         backdrop-filter: blur(10px);
         max-width: 900px;
+        border: 1px solid rgba(255,255,255,0.2);
     }
     
     /* 제목 스타일 */
@@ -46,16 +47,14 @@ st.markdown("""
         font-size: 2.5rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
-        background: linear-gradient(45deg, #667eea, #764ba2);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
     }
     
     .subtitle {
         text-align: center;
-        color: #7f8c8d;
+        color: #5a6c7d;
         font-size: 1.1rem;
         margin-bottom: 2rem;
+        font-weight: 500;
     }
     
     /* 단계 표시기 */
@@ -78,9 +77,9 @@ st.markdown("""
     }
     
     .step.active {
-        background: linear-gradient(45deg, #667eea, #764ba2);
+        background: #3498db;
         color: white;
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
     }
     
     .step.completed {
@@ -90,7 +89,7 @@ st.markdown("""
     
     .step.inactive {
         background: #ecf0f1;
-        color: #95a5a6;
+        color: #7f8c8d;
     }
     
     /* 카드 스타일 */
@@ -107,19 +106,20 @@ st.markdown("""
     .stButton > button {
         width: 100%;
         height: 50px;
-        border-radius: 25px;
+        border-radius: 10px;
         border: none;
-        background: linear-gradient(45deg, #667eea, #764ba2);
+        background: #3498db;
         color: white;
         font-weight: 600;
         font-size: 1rem;
         transition: all 0.3s ease;
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
     }
     
     .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        background: #2980b9;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(52, 152, 219, 0.4);
     }
     
     /* 감정 버튼 그리드 */
@@ -141,16 +141,17 @@ st.markdown("""
     }
     
     .emotion-btn:hover {
-        border-color: #667eea;
+        border-color: #3498db;
         background: #f8f9ff;
-        transform: translateY(-2px);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
     }
     
     /* 경고 및 성공 메시지 */
     .warning-box {
         background: #fff3cd;
-        border: 1px solid #ffeaa7;
-        color: #856404;
+        border: 1px solid #f39c12;
+        color: #8a6d3b;
         padding: 1rem;
         border-radius: 10px;
         margin: 1rem 0;
@@ -158,7 +159,7 @@ st.markdown("""
     
     .success-box {
         background: #d4edda;
-        border: 1px solid #c3e6cb;
+        border: 1px solid #27ae60;
         color: #155724;
         padding: 1rem;
         border-radius: 10px;
@@ -176,7 +177,7 @@ st.markdown("""
     
     .progress-bar {
         height: 100%;
-        background: linear-gradient(45deg, #667eea, #764ba2);
+        background: #3498db;
         border-radius: 3px;
         transition: width 0.3s ease;
     }
@@ -531,30 +532,56 @@ elif st.session_state.current_step == 5:
             
             위 정보를 바탕으로 4컷 만화의 각 장면을 간단명료하게 설명해주세요.
             각 장면은 한 문장으로, 번호와 함께 작성해주세요.
-            예시:
-            1. 주인공이 상황을 경험하는 장면
-            2. 감정이 생기기 시작하는 장면  
-            3. 감정이 절정에 달하는 장면
-            4. 결말이나 마무리 장면
+            
+            다음 형식으로 작성해주세요:
+            1. [첫 번째 장면 설명]
+            2. [두 번째 장면 설명]
+            3. [세 번째 장면 설명]
+            4. [네 번째 장면 설명]
             """
             
             result = ask_gemini(summary_prompt)
-            if "[오류]" not in result:
+            print(f"Gemini 응답: {result}")  # 디버깅용
+            
+            if result and "[오류]" not in result:
                 scenes = []
-                for line in result.split("\n"):
+                lines = result.strip().split("\n")
+                
+                for line in lines:
                     line = line.strip()
-                    if line and (line[0].isdigit() or line.startswith("-")):
-                        clean_scene = re.sub(r'^[\d\-\.\s]+', '', line).strip()
-                        if clean_scene:
-                            scenes.append(clean_scene)
+                    # 숫자로 시작하는 줄 찾기
+                    if re.match(r'^\d+\.', line):
+                        # 숫자와 점 제거하고 내용만 추출
+                        scene_text = re.sub(r'^\d+\.\s*', '', line).strip()
+                        if scene_text:
+                            scenes.append(scene_text)
+                
+                # 4개 장면이 없으면 기본 장면 생성
+                if len(scenes) < 4:
+                    default_scenes = [
+                        f"{st.session_state.age_group} 학생이 {st.session_state.situation}를 경험합니다",
+                        f"상황이 진행되면서 {st.session_state.emotion} 감정이 생겨납니다",
+                        f"{st.session_state.reason} 때문에 감정이 더욱 강해집니다",
+                        f"상황이 마무리되며 감정을 정리합니다"
+                    ]
+                    scenes = default_scenes
                 
                 st.session_state.scenes = scenes[:4]  # 최대 4컷만
+                print(f"생성된 장면들: {st.session_state.scenes}")  # 디버깅용
             else:
-                st.error("만화 시나리오 생성에 실패했습니다. 다시 시도해주세요.")
-                st.session_state.scenes = []
+                st.error(f"만화 시나리오 생성에 실패했습니다: {result}")
+                # 기본 장면으로 대체
+                st.session_state.scenes = [
+                    f"{st.session_state.age_group} 학생이 상황을 경험합니다",
+                    f"상황에서 {st.session_state.emotion} 감정을 느낍니다",
+                    f"{st.session_state.reason} 때문입니다",
+                    f"감정을 정리하고 마무리합니다"
+                ]
     
     # 장면별 이미지 생성
     if st.session_state.scenes:
+        st.success(f"✅ {len(st.session_state.scenes)}개의 장면이 생성되었습니다!")
+        
         for i, scene in enumerate(st.session_state.scenes):
             st.markdown(f"### 🎬 컷 {i+1}")
             st.write(f"**장면:** {scene}")
@@ -562,24 +589,47 @@ elif st.session_state.current_step == 5:
             # 이미지가 아직 생성되지 않았다면 생성
             if len(st.session_state.generated_images) <= i:
                 with st.spinner(f"컷 {i+1} 이미지를 생성하는 중..."):
+                    # 더 구체적이고 안전한 프롬프트
                     img_prompt = f"""
-                    Cartoon style illustration for children showing a {st.session_state.age_group} student 
-                    experiencing '{st.session_state.emotion}' emotion in this scene: {scene}. 
-                    The scene is related to: {st.session_state.situation}. 
-                    Weather context: {weather}. 
-                    Style: colorful, friendly, appropriate for children, manga/webtoon style.
+                    Create a colorful, child-friendly cartoon illustration showing:
+                    - A {st.session_state.age_group} character 
+                    - Scene: {scene}
+                    - Emotion: {st.session_state.emotion}
+                    - Setting related to: {st.session_state.situation}
+                    - Art style: cute, colorful, manga/anime style, appropriate for children
+                    - No text in the image
                     """
                     
                     image_url = generate_image(img_prompt)
-                    st.session_state.generated_images.append(image_url)
+                    if image_url:
+                        st.session_state.generated_images.append(image_url)
+                        print(f"이미지 {i+1} 생성 성공: {image_url}")  # 디버깅용
+                    else:
+                        st.session_state.generated_images.append("")
+                        print(f"이미지 {i+1} 생성 실패")  # 디버깅용
             
             # 이미지 표시
-            if len(st.session_state.generated_images) > i and st.session_state.generated_images[i]:
-                st.image(st.session_state.generated_images[i], caption=f"컷 {i+1}: {scene}")
-            else:
-                st.warning(f"⚠️ 컷 {i+1} 이미지 생성에 실패했습니다.")
+            if len(st.session_state.generated_images) > i:
+                if st.session_state.generated_images[i]:
+                    st.image(st.session_state.generated_images[i], caption=f"컷 {i+1}: {scene}", use_column_width=True)
+                else:
+                    st.warning(f"⚠️ 컷 {i+1} 이미지 생성에 실패했습니다. 다시 시도해보세요.")
+                    if st.button(f"🔄 컷 {i+1} 다시 생성", key=f"retry_{i}"):
+                        # 해당 이미지만 다시 생성
+                        with st.spinner(f"컷 {i+1} 이미지를 다시 생성하는 중..."):
+                            img_prompt = f"""
+                            Create a colorful, child-friendly cartoon illustration:
+                            Scene: {scene}, Character: {st.session_state.age_group}, 
+                            Emotion: {st.session_state.emotion}, Style: cute anime/manga
+                            """
+                            new_image_url = generate_image(img_prompt)
+                            if new_image_url:
+                                st.session_state.generated_images[i] = new_image_url
+                                st.rerun()
             
             st.divider()
+    else:
+        st.error("❌ 장면 생성에 실패했습니다. '다시 만들기' 버튼을 눌러 다시 시도해주세요.")
     
     # 완료 후 옵션
     col1, col2, col3 = st.columns([1, 1, 1])
@@ -587,7 +637,8 @@ elif st.session_state.current_step == 5:
     with col1:
         if st.button("🔄 다시 만들기", key="restart"):
             # 세션 초기화
-            for key in ["age_group", "situation", "emotion", "reason", "scenes", "generated_images"]:
+            keys_to_reset = ["age_group", "situation", "emotion", "reason", "scenes", "generated_images", "emotion_options", "counted"]
+            for key in keys_to_reset:
                 if key in st.session_state:
                     del st.session_state[key]
             st.session_state.current_step = 1
@@ -616,6 +667,10 @@ st.markdown('</div>', unsafe_allow_html=True)
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #7f8c8d; padding: 1rem;'>"
+    "🎨 AI 4컷 만화 생성기 | 감정을 표현하고 창의성을 키워보세요!"
+    "</div>", 
+    unsafe_allow_html=True
+)
     "🎨 AI 4컷 만화 생성기 | 감정을 표현하고 창의성을 키워보세요!"
     "</div>", 
     unsafe_allow_html=True
