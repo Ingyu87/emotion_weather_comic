@@ -1,25 +1,15 @@
 import streamlit as st
 import requests
 import json
-import base64
 import os
-import tempfile
-import urllib.request
 from dotenv import load_dotenv
-from fpdf import FPDF
 
-# -------------------------------
-# 환경변수 로드
-# -------------------------------
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 DALL_E_API_KEY = os.getenv("DALL_E_API_KEY")
 CITY = "Seoul"
 
-# -------------------------------
-# 호출 제한 초기화 (하루 최대 20회만 허용)
-# -------------------------------
 if "call_count" not in st.session_state:
     st.session_state.call_count = 0
 
@@ -27,17 +17,10 @@ if st.session_state.call_count >= 20:
     st.error("오늘은 20회까지만 생성할 수 있습니다. 내일 다시 이용해 주세요.")
     st.stop()
 
-# -------------------------------
-# Gemini API 요청 함수
-# -------------------------------
 def ask_gemini(prompt, model="models/gemini-1.5-pro-latest"):
     url = f"https://generativelanguage.googleapis.com/v1beta/{model}:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
-    data = {
-        "contents": [
-            {"parts": [{"text": prompt}]}
-        ]
-    }
+    data = {"contents": [{"parts": [{"text": prompt}]}]}
     response = requests.post(url, headers=headers, data=json.dumps(data), verify=False)
     result = response.json()
     try:
@@ -45,115 +28,91 @@ def ask_gemini(prompt, model="models/gemini-1.5-pro-latest"):
     except:
         st.error(str(result)); return "[오류] Gemini API 응답을 확인할 수 없습니다."
 
-# -------------------------------
-# 이미지 생성 (DALL·E)
-# -------------------------------
 def generate_image(prompt):
     url = "https://api.openai.com/v1/images/generations"
     headers = {
         "Authorization": f"Bearer {DALL_E_API_KEY}",
         "Content-Type": "application/json"
     }
-    data = {
-        "model": "dall-e-3",
-        "prompt": prompt,
-        "n": 1,
-        "size": "512x512"
-    }
+    data = {"model": "dall-e-3", "prompt": prompt, "n": 1, "size": "512x512"}
     response = requests.post(url, headers=headers, json=data)
     if response.status_code == 200:
         return response.json()["data"][0]["url"]
     else:
-        return f"[오류] 이미지 생성 실패: {response.text}"
+        return ""
 
-# -------------------------------
-# 날씨 API
-# -------------------------------
 def get_weather():
-    weather_url = f"http://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={WEATHER_API_KEY}&lang=kr&units=metric"
-    response = requests.get(weather_url)
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={WEATHER_API_KEY}&lang=kr&units=metric"
+    response = requests.get(url)
     if response.status_code == 200:
         data = response.json()
-        description = data["weather"][0]["description"]
-        temperature = data["main"]["temp"]
-        return f"{description}, {temperature}°C"
+        return f"{data['weather'][0]['description']}, {data['main']['temp']}°C"
     else:
         return "날씨 정보를 불러올 수 없습니다."
 
-# -------------------------------
-# Streamlit UI
-# -------------------------------
 st.set_page_config(layout="wide")
 st.sidebar.title("📊 사용량")
 st.sidebar.metric(label="오늘의 생성 횟수", value=f"{st.session_state.call_count} / 20")
-
 st.title("🌤️ 감정 + 날씨 기반 4컷 만화 생성기")
 
+if "age_group" not in st.session_state:
+    st.session_state.age_group = None
+if "situation" not in st.session_state:
+    st.session_state.situation = None
 if "emotion" not in st.session_state:
     st.session_state.emotion = None
 if "reason" not in st.session_state:
     st.session_state.reason = None
 
-# Step 1: 감정 선택
-if not st.session_state.emotion:
-    st.subheader("1️⃣ 오늘 당신의 감정을 선택하세요")
-    raw_emotions = ask_gemini("초등학생이 느낄 수 있는 감정 20가지를 한 줄로 쉼표로 구분해서 나열해줘.")
-    emotions = [e.strip() for e in raw_emotions.split(",") if e.strip()]
+if not st.session_state.age_group:
+    st.subheader("👤 사용자 나이대를 선택하세요")
+    age = st.radio("나이대 선택", ["초등학교 1~2학년", "초등학교 3~4학년", "초등학교 5~6학년", "교사"], horizontal=True)
+    if st.button("확인", key="age_btn"):
+        st.session_state.age_group = age
+        st.rerun()
+
+elif not st.session_state.situation:
+    st.subheader("📝 어떤 상황인가요?")
+    situation = st.text_area("오늘 있었던 상황이나 기억에 남는 일을 짧게 적어주세요")
+    if st.button("다음", key="situation_btn") and situation.strip():
+        st.session_state.situation = situation.strip()
+        st.rerun()
+
+elif not st.session_state.emotion:
+    st.subheader("😊 이 상황에서 느낀 감정을 골라보세요")
+    prompt = f"{st.session_state.age_group}이(가) 겪은 다음 상황에 대해 느낄 수 있는 감정을 10가지 제시해줘. 상황: {st.session_state.situation}"
+    raw = ask_gemini(prompt)
+    emotions = [e.strip() for e in raw.split(",") if e.strip()]
     cols = st.columns(5)
     for i, emo in enumerate(emotions):
         if cols[i % 5].button(emo):
             st.session_state.emotion = emo
             st.rerun()
 
-# Step 2: 이유 선택
 elif not st.session_state.reason:
-    st.subheader(f"2️⃣ '{st.session_state.emotion}' 감정의 이유를 선택하세요")
-    prompt = f"초등학생이 '{st.session_state.emotion}'이라는 감정을 느낄 수 있는 구체적인 이유를 8가지 나열해줘. 한 줄로 쉼표로 구분해서."
-    raw_reasons = ask_gemini(prompt)
-    reasons = [r.strip() for r in raw_reasons.split(",") if r.strip()]
-    cols = st.columns(4)
-    for i, reason in enumerate(reasons):
-        if cols[i % 4].button(reason):
-            st.session_state.reason = reason
-            st.rerun()
+    st.subheader("🔍 그 감정을 느낀 이유를 작성해주세요")
+    reason = st.text_area("그 감정을 느낀 이유는 무엇인가요?")
+    if st.button("만화 생성하기") and reason.strip():
+        st.session_state.reason = reason.strip()
+        st.rerun()
 
-# Step 3: 만화 생성
-elif st.session_state.reason:
-    st.subheader("3️⃣ 만화 생성 결과")
+else:
+    st.subheader("🎬 생성된 4컷 만화")
     weather = get_weather()
-    summary_prompt = f"감정: {st.session_state.emotion}\n이유: {st.session_state.reason}\n날씨: {weather}\n\n이 정보를 바탕으로 4컷 만화의 장면 설명을 각 컷마다 한 문장씩 해줘."
-    summary = ask_gemini(summary_prompt)
-    st.markdown(f"**날씨:** {weather}")
-    st.text_area("🖼️ 4컷 만화 설명 (텍스트)", summary, height=250)
+    st.markdown(f"**📍 오늘의 날씨:** {weather}")
 
-    st.subheader("🎨 생성된 컷 이미지")
-    scenes = [line.strip("- ") for line in summary.split("\n") if line.strip()]
-
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.add_font('ArialUnicode', '', '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc', uni=True)
-    pdf.set_font("ArialUnicode", size=14)
-    pdf.cell(200, 10, txt="감정 만화 생성 결과", ln=True, align="C")
-    pdf.ln(10)
-    pdf.multi_cell(0, 10, f"감정: {st.session_state.emotion}\n이유: {st.session_state.reason}\n날씨: {weather}")
-
+    summary_prompt = f"나이대: {st.session_state.age_group}\n상황: {st.session_state.situation}\n감정: {st.session_state.emotion}\n이유: {st.session_state.reason}\n날씨: {weather}\n\n이 정보를 바탕으로 4컷 만화의 장면 설명을 한 컷씩 나눠서 작성해줘. 각 장면은 한 문장으로 구성."
+    result = ask_gemini(summary_prompt)
+    scenes = [line.strip("- ") for line in result.split("\n") if line.strip()]
     for i, scene in enumerate(scenes):
         st.markdown(f"**컷 {i+1}**: {scene}")
-        img_prompt = f"A colorful cartoon style illustration: {scene}"
-        img_url = generate_image(img_prompt)
-        pdf.set_font("ArialUnicode", size=12)
-        pdf.multi_cell(0, 10, f"컷 {i+1}: {scene}")
-        if "http" in img_url:
-            st.image(img_url, caption=f"컷 {i+1}", use_column_width=True)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img:
-                urllib.request.urlretrieve(img_url, tmp_img.name)
-                pdf.image(tmp_img.name, w=100)
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
-        pdf.output(tmp_pdf.name)
-        with open(tmp_pdf.name, "rb") as f:
-            st.download_button("📄 생성 결과 PDF 다운로드", f.read(), file_name="emotion_comic.pdf", mime="application/pdf")
+        img_prompt = (
+            f"Cartoon style illustration showing a {st.session_state.age_group} in a scene where they feel '{st.session_state.emotion}' "
+            f"because '{st.session_state.reason}', in the context of '{st.session_state.situation}', with weather: {weather}. "
+            f"Scene detail: {scene}"
+        )
+        url = generate_image(img_prompt)
+        if "http" in url:
+            st.image(url, caption=f"컷 {i+1}", use_column_width=True)
 
     st.session_state.call_count += 1
-
-
