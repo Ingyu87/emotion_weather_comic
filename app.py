@@ -456,8 +456,8 @@ def render_progress_bar(progress):
 # 메인 실행
 init_session_state()
 
-if st.session_state.call_count >= 100:
-    st.error("🚫 오늘은 100회까지만 생성할 수 있습니다. 내일 다시 이용해 주세요.")
+if st.session_state.call_count >= 50:
+    st.error("🚫 오늘은 50회까지만 생성할 수 있습니다. 내일 다시 이용해 주세요.")
     st.stop()
 
 st.markdown('<div class="main-container">', unsafe_allow_html=True)
