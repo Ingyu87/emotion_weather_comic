@@ -389,45 +389,35 @@ progress = (st.session_state.current_step - 1) * 25
 render_progress_bar(progress)
 
 if st.session_state.current_step == 1:
-    st.markdown("""
-    <div class="safety-guide">
-        <div class="safety-guide-left">
-            <div class="safety-title">
-                🚫 이런 내용은 차단돼요
-            </div>
-            <ul class="safety-list prohibited-list">
-                <li>욕설, 폭언, 혐오 표현</li>
-                <li>폭력적이거나 위험한 내용</li>
-                <li>부적절한 성적 표현</li>
-                <li>정치적 인물이나 논란적 내용</li>
-                <li>의미 없는 글자 나열</li>
-            </ul>
-        </div>
-        
-        <div class="safety-guide-right">
-            <div class="safety-title">
-                ✅ 이런 건전한 내용을 사용해주세요
-            </div>
-            <ul class="safety-list recommended-list">
-                <li>친구와의 우정 이야기</li>
-                <li>학교에서의 즐거운 경험</li>
-                <li>가족과의 따뜻한 시간</li>
-                <li>새로운 것을 배우는 기쁨</li>
-                <li>도움을 주고받는 경험</li>
-            </ul>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # 안전 사용 안내 (HTML 렌더링이 아닌 Streamlit 네이티브 컴포넌트 사용)
+    col1, col2 = st.columns(2)
     
-    st.markdown("""
-    <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); border-radius: 15px; margin-bottom: 2rem;">
-        <h3 style="color: #1976d2; margin-bottom: 1rem;">🎨 감정 표현 4컷 만화 만들기</h3>
-        <p style="color: #424242; font-size: 1.1rem; margin-bottom: 0;">
-            📚 교육 목표: 자신의 감정을 인식하고 표현하는 능력 향상<br>
-            🎯 결과물: 4컷 만화 스토리보드 + AI 이미지 생성용 프롬프트
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    with col1:
+        st.markdown("#### 🚫 이런 내용은 차단돼요")
+        st.markdown("""
+        - ⚠️ 욕설, 폭언, 혐오 표현
+        - ⚠️ 폭력적이거나 위험한 내용  
+        - ⚠️ 부적절한 성적 표현
+        - ⚠️ 정치적 인물이나 논란적 내용
+        - ⚠️ 의미 없는 글자 나열
+        """)
+    
+    with col2:
+        st.markdown("#### ✅ 이런 건전한 내용을 사용해주세요")
+        st.markdown("""
+        - ✅ 친구와의 우정 이야기
+        - ✅ 학교에서의 즐거운 경험
+        - ✅ 가족과의 따뜻한 시간
+        - ✅ 새로운 것을 배우는 기쁨
+        - ✅ 도움을 주고받는 경험
+        """)
+    
+    st.info("""
+    🎨 **감정 표현 4컷 만화 만들기**
+    
+    📚 교육 목표: 자신의 감정을 인식하고 표현하는 능력 향상  
+    🎯 결과물: 4컷 만화 스토리보드 + AI 이미지 생성용 프롬프트
+    """)
     
     st.subheader("👤 사용자 나이대를 선택하세요")
     st.markdown("만화 스타일과 내용을 맞춤화하기 위해 나이대를 선택해주세요.")
