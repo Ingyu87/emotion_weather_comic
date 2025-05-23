@@ -7,7 +7,6 @@ import time
 
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
 WEATHER_API_KEY = st.secrets.get("WEATHER_API_KEY")
-DALL_E_API_KEY = st.secrets.get("DALL_E_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 CITY = "Seoul"
 
 st.set_page_config(
@@ -123,6 +122,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def init_session_state():
+    # 현재 날짜 확인
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    # 날짜가 바뀌었으면 카운트 리셋
+    if "last_date" not in st.session_state or st.session_state.last_date != today:
+        st.session_state.call_count = 0
+        st.session_state.last_date = today
+    
     defaults = {
         "call_count": 0,
         "current_step": 1,
@@ -132,7 +139,8 @@ def init_session_state():
         "reason": None,
         "emotion_options": ([], []),
         "scenes": [],
-        "generated_images": []
+        "scene_prompts": [],
+        "last_date": today
     }
     
     for key, value in defaults.items():
@@ -170,49 +178,6 @@ def ask_gemini(prompt, model="models/gemini-1.5-pro-latest"):
         
     except:
         return "[오류] API 호출에 실패했습니다."
-
-def generate_image(prompt):
-    try:
-        if not DALL_E_API_KEY:
-            st.error("DALL-E API 키가 설정되지 않았습니다.")
-            return ""
-            
-        url = "https://api.openai.com/v1/images/generations"
-        headers = {
-            "Authorization": f"Bearer {DALL_E_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "model": "dall-e-3",
-            "prompt": prompt,
-            "n": 1,
-            "size": "1024x1024",
-            "response_format": "url"
-        }
-        
-        st.write(f"🔍 이미지 프롬프트: {prompt[:100]}...")  # 디버깅용
-        
-        response = requests.post(url, headers=headers, json=data, timeout=60)
-        
-        if response.status_code == 200:
-            result = response.json()
-            image_url = result["data"][0]["url"]
-            st.success(f"✅ 이미지 생성 성공!")
-            return image_url
-        else:
-            st.error(f"❌ API 오류: {response.status_code}")
-            st.error(f"오류 내용: {response.text}")
-            return ""
-            
-    except requests.exceptions.Timeout:
-        st.error("⏰ 이미지 생성 시간이 초과되었습니다.")
-        return ""
-    except requests.exceptions.RequestException as e:
-        st.error(f"🌐 네트워크 오류: {str(e)}")
-        return ""
-    except Exception as e:
-        st.error(f"🔧 예상치 못한 오류: {str(e)}")
-        return ""
 
 def get_weather():
     try:
@@ -273,8 +238,10 @@ render_progress_bar(progress)
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
+    # 현재 날짜 표시
+    current_date = datetime.now().strftime("%Y년 %m월 %d일")
     st.metric(
-        label="🎯 오늘의 생성 횟수", 
+        label=f"🎯 오늘의 생성 횟수 ({current_date})", 
         value=f"{st.session_state.call_count} / 20",
         delta=f"{20 - st.session_state.call_count}회 남음"
     )
@@ -470,36 +437,72 @@ elif st.session_state.current_step == 5:
     if st.session_state.scenes:
         st.success(f"✅ {len(st.session_state.scenes)}개의 장면이 생성되었습니다!")
         
-        for i, scene in enumerate(st.session_state.scenes):
+        # 프롬프트가 아직 생성되지 않았다면 생성
+        if not st.session_state.scene_prompts:
+            with st.spinner("🎨 각 장면별 최적화된 이미지 프롬프트를 생성하고 있어요..."):
+                for i, scene in enumerate(st.session_state.scenes):
+                    prompt_generation_request = f"""
+다음 정보를 바탕으로 AI 이미지 생성을 위한 최적화된 영어 프롬프트를 만들어주세요:
+
+- 나이대: {st.session_state.age_group}
+- 전체 상황: {st.session_state.situation}
+- 감정: {st.session_state.emotion}
+- 감정 이유: {st.session_state.reason}
+- 이 컷의 장면: {scene}
+
+요구사항:
+1. 영어로 작성
+2. DALL-E, 미드저니 등에서 잘 작동하는 프롬프트
+3. 어린이에게 적합한 귀여운 만화 스타일
+4. 구체적이고 상세한 묘사
+5. 한 줄로 작성 (개행 없이)
+
+프롬프트만 출력해주세요:
+"""
+                    
+                    ai_prompt = ask_gemini(prompt_generation_request)
+                    if ai_prompt and "[오류]" not in ai_prompt:
+                        # 불필요한 텍스트 제거하고 프롬프트만 추출
+                        clean_prompt = ai_prompt.strip()
+                        # 만약 "프롬프트:" 같은 접두사가 있다면 제거
+                        if ":" in clean_prompt and len(clean_prompt.split(":")) > 1:
+                            clean_prompt = clean_prompt.split(":")[-1].strip()
+                        st.session_state.scene_prompts.append(clean_prompt)
+                    else:
+                        # AI 생성 실패 시 기본 프롬프트 사용
+                        default_prompt = f"A cute cartoon illustration of a {st.session_state.age_group} child showing {st.session_state.emotion} emotion. Scene: {scene}. Colorful, child-friendly, anime style, high quality illustration."
+                        st.session_state.scene_prompts.append(default_prompt)
+        
+        # 생성된 장면과 프롬프트 표시
+        for i, (scene, prompt) in enumerate(zip(st.session_state.scenes, st.session_state.scene_prompts)):
             st.markdown(f"### 🎬 컷 {i+1}")
             st.write(f"**장면 설명:** {scene}")
             
-            # 이미지 생성용 프롬프트 생성
-            img_prompt = f"""A cute cartoon illustration of a {st.session_state.age_group} child showing {st.session_state.emotion} emotion. Scene: {scene}. The child is experiencing: {st.session_state.situation}. Art style: colorful, child-friendly, anime/manga style, appropriate for children. No text in the image. High quality, detailed illustration."""
-            
-            # 프롬프트를 복사 가능한 형태로 표시
-            st.markdown("**🎨 이미지 생성 프롬프트 (복사해서 사용하세요):**")
-            st.code(img_prompt, language="text")
+            # AI가 생성한 최적화된 프롬프트 표시
+            st.markdown("**🤖 AI 생성 최적화 프롬프트:**")
+            st.code(prompt, language="text")
             
             # 추가 프롬프트 옵션들
             with st.expander(f"컷 {i+1} 다른 스타일 프롬프트들", expanded=False):
                 # 미드저니 스타일 프롬프트
-                midjourney_prompt = f"{st.session_state.age_group} child, {st.session_state.emotion} emotion, {scene}, cute cartoon style, colorful, anime art, child-friendly --ar 1:1 --v 6"
-                st.markdown("**미드저니용:**")
+                midjourney_prompt = f"{prompt} --ar 1:1 --v 6 --style cute"
+                st.markdown("**미드저니용 (AI 최적화):**")
                 st.code(midjourney_prompt, language="text")
                 
                 # 스테이블 디퓨전 스타일 프롬프트  
-                sd_prompt = f"((cute cartoon)), {st.session_state.age_group} child, {st.session_state.emotion} emotion, {scene}, anime style, colorful, high quality, detailed, child-friendly, no text"
-                st.markdown("**스테이블 디퓨전용:**")
+                sd_prompt = f"((cute cartoon)), {prompt}, anime style, colorful, high quality, detailed, child-friendly, no text"
+                st.markdown("**스테이블 디퓨전용 (AI 최적화):**")
                 st.code(sd_prompt, language="text")
                 
-                # 한국어 프롬프트 (한국 AI 서비스용)
-                korean_prompt = f"{st.session_state.age_group} 어린이가 {st.session_state.emotion} 감정을 느끼는 모습, {scene}, 귀여운 만화 스타일, 컬러풀한 그림, 아이들에게 적합한 일러스트"
-                st.markdown("**한국어 프롬프트 (국내 AI 서비스용):**")
-                st.code(korean_prompt, language="text")
+                # 한국어 번역 프롬프트
+                korean_translation_request = f"다음 영어 프롬프트를 한국어로 자연스럽게 번역해주세요: {prompt}"
+                korean_prompt = ask_gemini(korean_translation_request)
+                if korean_prompt and "[오류]" not in korean_prompt:
+                    st.markdown("**한국어 프롬프트 (AI 번역):**")
+                    st.code(korean_prompt.strip(), language="text")
             
-            # 추천 이미지 생성 사이트들
-            if i == 0:  # 첫 번째 컷에만 표시
+            # 추천 이미지 생성 사이트들 (첫 번째 컷에만 표시)
+            if i == 0:
                 st.markdown("---")
                 st.markdown("### 🌐 추천 이미지 생성 사이트")
                 col1, col2, col3 = st.columns(3)
@@ -526,6 +529,7 @@ elif st.session_state.current_step == 5:
                     - [Ideogram](https://ideogram.ai)
                     """)
                 
+                st.info("💡 **팁**: AI가 생성한 최적화 프롬프트를 사용하면 더 좋은 결과를 얻을 수 있어요!")
                 st.markdown("---")
             
             st.divider()
@@ -536,7 +540,7 @@ elif st.session_state.current_step == 5:
     
     with col1:
         if st.button("🔄 다시 만들기"):
-            keys_to_reset = ["age_group", "situation", "emotion", "reason", "scenes", "generated_images", "emotion_options", "counted"]
+            keys_to_reset = ["age_group", "situation", "emotion", "reason", "scenes", "scene_prompts", "emotion_options", "counted"]
             for key in keys_to_reset:
                 if key in st.session_state:
                     del st.session_state[key]
@@ -557,18 +561,17 @@ elif st.session_state.current_step == 5:
         st.session_state.call_count += 1
         st.session_state.counted = True
         
-    # 전체 프롬프트 한번에 복사하기
-    if st.session_state.scenes:
+    # 전체 AI 생성 프롬프트 한번에 복사하기
+    if st.session_state.scenes and st.session_state.scene_prompts:
         st.markdown("---")
-        st.markdown("### 📋 전체 프롬프트 모음")
+        st.markdown("### 📋 AI 생성 프롬프트 전체 모음")
         
-        all_prompts = ""
-        for i, scene in enumerate(st.session_state.scenes):
-            prompt = f"A cute cartoon illustration of a {st.session_state.age_group} child showing {st.session_state.emotion} emotion. Scene: {scene}. The child is experiencing: {st.session_state.situation}. Art style: colorful, child-friendly, anime/manga style, appropriate for children. No text in the image. High quality, detailed illustration."
-            all_prompts += f"컷 {i+1}: {prompt}\n\n"
+        all_ai_prompts = ""
+        for i, (scene, prompt) in enumerate(zip(st.session_state.scenes, st.session_state.scene_prompts)):
+            all_ai_prompts += f"컷 {i+1} - {scene}\n프롬프트: {prompt}\n\n"
         
-        st.markdown("**모든 컷의 프롬프트:**")
-        st.text_area("전체 프롬프트 (복사하세요)", all_prompts, height=200)
+        st.markdown("**🤖 AI가 최적화한 모든 컷의 프롬프트:**")
+        st.text_area("전체 AI 프롬프트 (복사하세요)", all_ai_prompts, height=200)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
