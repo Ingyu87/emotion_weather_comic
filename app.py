@@ -1,4 +1,20 @@
-import streamlit as st
+/* 전역 텍스트 색상 강제 적용 */
+.stApp * {
+    color: #000000 !important;
+}
+
+.stMarkdown, .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+    color: #000000 !important;
+}
+
+.stRadio label, .stTextArea label {
+    color: #000000 !important;
+}
+
+/* 버튼 텍스트는 흰색 유지 */
+.stButton > button {
+    color: white !important;
+}import streamlit as st
 import requests
 import json
 import re
