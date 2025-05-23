@@ -54,6 +54,19 @@ def get_weather():
     else:
         return "날씨 정보를 불러올 수 없습니다."
 
+def fetch_emotions(situation):
+    prompt = f"'{situation}'라는 상황에 대해 느낄 수 있는 감정을 긍정적인 감정 10개, 부정적인 감정 10개로 나누어 각각 한 줄에 쉼표로 구분하여 출력해줘. 예시: 긍정: 기쁨,감사,... / 부정: 슬픔,분노,..."
+    result = ask_gemini(prompt)
+    try:
+        lines = result.strip().split("\n")
+        pos_line = next((l for l in lines if "긍정" in l), "긍정:")
+        neg_line = next((l for l in lines if "부정" in l), "부정:")
+        positive = [e.strip() for e in pos_line.split(":")[1].split(",") if e.strip()]
+        negative = [e.strip() for e in neg_line.split(":")[1].split(",") if e.strip()]
+        return positive[:10], negative[:10]
+    except:
+        return [], []
+
 st.set_page_config(layout="wide")
 st.sidebar.title("📊 사용량")
 st.sidebar.metric(label="오늘의 생성 횟수", value=f"{st.session_state.call_count} / 20")
@@ -67,6 +80,8 @@ if "emotion" not in st.session_state:
     st.session_state.emotion = None
 if "reason" not in st.session_state:
     st.session_state.reason = None
+if "emotion_options" not in st.session_state:
+    st.session_state.emotion_options = ([], [])
 
 if not st.session_state.age_group:
     st.subheader("👤 사용자 나이대를 선택하세요")
@@ -78,36 +93,40 @@ if not st.session_state.age_group:
 elif not st.session_state.situation:
     st.subheader("📝 어떤 상황인가요?")
     situation = st.text_area("오늘 있었던 상황이나 기억에 남는 일을 짧게 적어주세요")
-    col1, col2 = st.columns(2)
-    if col1.button("이전", key="back_age"):
+    col1, col2 = st.columns([1, 5])
+    if col1.button("⬅ 이전", key="back_age"):
         st.session_state.age_group = None
         st.rerun()
     if col2.button("다음", key="situation_btn") and situation.strip():
         st.session_state.situation = situation.strip()
+        st.session_state.emotion_options = fetch_emotions(st.session_state.situation)
         st.rerun()
 
 elif not st.session_state.emotion:
     st.subheader("😊 이 상황에서 느낀 감정을 골라보세요")
-    prompt = (
-        f"{st.session_state.age_group}이(가) 겪은 다음 상황에 대해 느낄 수 있는 긍정적 감정 5개와 부정적 감정 5개를 콤마로 구분해서 제시해줘. "
-        f"감정 이름만 간단히 제시해. 상황: {st.session_state.situation}"
-    )
-    raw = ask_gemini(prompt)
-    emotions = [e.strip() for e in raw.split(",") if e.strip()]
-    cols = st.columns(5)
-    for i, emo in enumerate(emotions):
-        if cols[i % 5].button(emo):
+    st.markdown("**긍정적인 감정**")
+    cols_pos = st.columns(5)
+    for i, emo in enumerate(st.session_state.emotion_options[0]):
+        if cols_pos[i % 5].button(emo):
             st.session_state.emotion = emo
             st.rerun()
-    if st.button("이전", key="back_situation"):
+
+    st.markdown("**부정적인 감정**")
+    cols_neg = st.columns(5)
+    for i, emo in enumerate(st.session_state.emotion_options[1]):
+        if cols_neg[i % 5].button(emo):
+            st.session_state.emotion = emo
+            st.rerun()
+
+    if st.button("⬅ 이전", key="back_situation"):
         st.session_state.situation = None
         st.rerun()
 
 elif not st.session_state.reason:
     st.subheader("🔍 그 감정을 느낀 이유를 작성해주세요")
     reason = st.text_area("그 감정을 느낀 이유는 무엇인가요?")
-    col1, col2 = st.columns(2)
-    if col1.button("이전", key="back_emotion"):
+    col1, col2 = st.columns([1, 5])
+    if col1.button("⬅ 이전", key="back_emotion"):
         st.session_state.emotion = None
         st.rerun()
     if col2.button("만화 생성하기") and reason.strip():
