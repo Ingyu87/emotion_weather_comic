@@ -74,13 +74,20 @@ if not st.session_state.age_group:
 elif not st.session_state.situation:
     st.subheader("📝 어떤 상황인가요?")
     situation = st.text_area("오늘 있었던 상황이나 기억에 남는 일을 짧게 적어주세요")
-    if st.button("다음", key="situation_btn") and situation.strip():
+    col1, col2 = st.columns(2)
+    if col1.button("이전", key="back_age"):
+        st.session_state.age_group = None
+        st.rerun()
+    if col2.button("다음", key="situation_btn") and situation.strip():
         st.session_state.situation = situation.strip()
         st.rerun()
 
 elif not st.session_state.emotion:
     st.subheader("😊 이 상황에서 느낀 감정을 골라보세요")
-    prompt = f"{st.session_state.age_group}이(가) 겪은 다음 상황에 대해 느낄 수 있는 감정을 10가지 제시해줘. 상황: {st.session_state.situation}"
+    prompt = (
+        f"{st.session_state.age_group}이(가) 겪은 다음 상황에 대해 느낄 수 있는 감정 단어 10개를 콤마로 구분해서 제시해줘. "
+        f"감정 이름만 간단히 제시해. 상황: {st.session_state.situation}"
+    )
     raw = ask_gemini(prompt)
     emotions = [e.strip() for e in raw.split(",") if e.strip()]
     cols = st.columns(5)
@@ -88,11 +95,18 @@ elif not st.session_state.emotion:
         if cols[i % 5].button(emo):
             st.session_state.emotion = emo
             st.rerun()
+    if st.button("이전", key="back_situation"):
+        st.session_state.situation = None
+        st.rerun()
 
 elif not st.session_state.reason:
     st.subheader("🔍 그 감정을 느낀 이유를 작성해주세요")
     reason = st.text_area("그 감정을 느낀 이유는 무엇인가요?")
-    if st.button("만화 생성하기") and reason.strip():
+    col1, col2 = st.columns(2)
+    if col1.button("이전", key="back_emotion"):
+        st.session_state.emotion = None
+        st.rerun()
+    if col2.button("만화 생성하기") and reason.strip():
         st.session_state.reason = reason.strip()
         st.rerun()
 
