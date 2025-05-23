@@ -40,7 +40,7 @@ st.markdown("""
     
     .main-title {
         text-align: center;
-        color: #2c3e50;
+        color: #000000;
         font-size: 2.5rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
@@ -48,7 +48,7 @@ st.markdown("""
     
     .subtitle {
         text-align: center;
-        color: #5a6c7d;
+        color: #000000;
         font-size: 1.1rem;
         margin-bottom: 2rem;
         font-weight: 500;
@@ -85,7 +85,7 @@ st.markdown("""
     
     .step.inactive {
         background: #ecf0f1;
-        color: #7f8c8d;
+        color: #000000;
     }
     
     .card {
@@ -136,7 +136,7 @@ st.markdown("""
     .warning-box {
         background: #fff3cd;
         border: 1px solid #f39c12;
-        color: #8a6d3b;
+        color: #000000;
         padding: 1rem;
         border-radius: 10px;
         margin: 1rem 0;
@@ -145,7 +145,7 @@ st.markdown("""
     .success-box {
         background: #d4edda;
         border: 1px solid #27ae60;
-        color: #155724;
+        color: #000000;
         padding: 1rem;
         border-radius: 10px;
         margin: 1rem 0;
@@ -582,7 +582,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #7f8c8d; padding: 1rem;'>"
+    "<div style='text-align: center; color: #000000; padding: 1rem;'>"
     "🎨 AI 4컷 만화 생성기 | 감정을 표현하고 창의성을 키워보세요!"
     "</div>", 
     unsafe_allow_html=True
