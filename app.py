@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-DALL_E_API_KEY = os.getenv("DALL_E_API_KEY")
+DALL_E_API_KEY = os.getenv("DALL_E_API_KEY") or os.getenv("OPENAI_API_KEY")  # 팀 계정 백업 사용
 CITY = "Seoul"
 
 if "call_count" not in st.session_state:
@@ -128,5 +128,8 @@ else:
         url = generate_image(img_prompt)
         if "http" in url:
             st.image(url, caption=f"컷 {i+1}", use_column_width=True)
+        else:
+            st.warning(f"❌ 컷 {i+1} 이미지 생성에 실패했어요. 다시 시도해보거나 API 키를 확인해주세요.")
 
     st.session_state.call_count += 1
+
