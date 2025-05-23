@@ -105,19 +105,48 @@ st.markdown("""
         cursor: pointer !important;
     }
     
+    /* 워터마크 예쁘게 꾸미기 - 왼쪽 하단 */
     .watermark {
         position: fixed;
         bottom: 20px;
         left: 20px;
         font-size: 12px;
-        color: #666666;
-        background: rgba(255, 255, 255, 0.8);
-        padding: 5px 10px;
-        border-radius: 5px;
+        color: #ffffff;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 8px 16px;
+        border-radius: 20px;
         z-index: 99999;
         pointer-events: none;
-        font-weight: 500;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        animation: watermarkFloat 3s ease-in-out infinite;
+    }
+    
+    @keyframes watermarkFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+    }
+    
+    /* 코드 블록 복사 버튼 스타일링 */
+    .stCode {
+        position: relative;
+    }
+    
+    .stCode:hover::after {
+        content: "📋";
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(52, 152, 219, 0.9);
+        color: white;
+        padding: 5px 8px;
+        border-radius: 8px;
+        font-size: 12px;
+        cursor: pointer;
+        z-index: 1000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
     
     .stApp {
@@ -1083,7 +1112,22 @@ Panel 4: {st.session_state.scenes[3] if len(st.session_state.scenes) > 3 else ""
 Safety requirements: Safe for children, educational content, wholesome, school-appropriate, consistent character design across all panels, colorful, child-friendly."""
         
         st.markdown("**🎨 아래 프롬프트를 복사해서 AI 이미지 생성 사이트에 붙여넣으세요:**")
-        st.text_area("4컷 만화 생성 프롬프트", four_panel_prompt, height=250, key="four_panel_final")
+        
+        # 복사 기능이 있는 텍스트 영역
+        st.code(four_panel_prompt, language="text")
+        
+        # 복사 버튼 추가
+        if st.button("📋 프롬프트 복사하기", key="copy_prompt"):
+            st.success("✅ 프롬프트가 복사되었습니다! AI 이미지 생성 사이트에 붙여넣어 주세요!")
+        
+        # JavaScript로 실제 복사 기능 구현
+        st.markdown(f"""
+        <script>
+        function copyToClipboard() {{
+            navigator.clipboard.writeText(`{four_panel_prompt.replace('`', '\\`')}`);
+        }}
+        </script>
+        """, unsafe_allow_html=True)
         
         st.markdown("### 🌐 추천 이미지 생성 사이트")
         col1, col2, col3 = st.columns(3)
@@ -1117,6 +1161,8 @@ Safety requirements: Safe for children, educational content, wholesome, school-a
 st.markdown('</div>', unsafe_allow_html=True)
 
 # 워터마크와 푸터도 Streamlit 네이티브로 변경
+# 예쁜 워터마크 추가
+st.markdown('<div class="watermark">🎨 서울가동초 백인규</div>', unsafe_allow_html=True)
+
 st.markdown("---")
-st.markdown("**서울가동초 백인규**", unsafe_allow_html=False)
 st.markdown("📋 4컷 만화 스토리보드 생성기 | 감정을 표현하고 창의성을 키워보세요!")
