@@ -322,22 +322,53 @@ elif st.session_state.current_step == 2:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("📝 어떤 상황인가요?")
     
-    # 예시 상황들 제공
-    st.markdown("""
+    # 선택된 나이대에 맞는 예시 상황들 제공
+    age_situations = {
+        "초등학교 1~2학년": [
+            "급식시간에 좋아하는 반찬이 나왔을 때",
+            "친구와 놀이터에서 함께 놀았을 때", 
+            "선생님께 칭찬을 받았을 때",
+            "새로운 친구와 인사를 나눴을 때",
+            "미술 시간에 그림을 그렸을 때"
+        ],
+        "초등학교 3~4학년": [
+            "체육시간에 피구를 하다가 공에 맞았을 때",
+            "숙제를 깜빡하고 학교에 왔을 때",
+            "시험에서 예상보다 좋은 점수를 받았을 때",
+            "친구와 다툰 후 화해했을 때",
+            "발표를 하는데 긴장되었을 때"
+        ],
+        "초등학교 5~6학년": [
+            "학급 임원 선거에서 떨어졌을 때",
+            "친한 친구가 다른 학교로 전학갔을 때",
+            "어려운 수학 문제를 혼자 풀었을 때",
+            "단체 활동에서 의견이 안 맞았을 때",
+            "졸업식을 앞두고 친구들과 시간을 보낼 때"
+        ],
+        "교사": [
+            "학생이 처음으로 어려운 개념을 이해했을 때",
+            "학급에서 갈등이 일어나 중재해야 할 때", 
+            "공개수업을 앞두고 준비하는 상황",
+            "학부모와 상담하는 시간",
+            "동료 교사와 협업하여 프로젝트를 진행할 때"
+        ]
+    }
+    
+    current_age = st.session_state.age_group or "초등학교 1~2학년"
+    situations = age_situations.get(current_age, age_situations["초등학교 1~2학년"])
+    
+    st.markdown(f"""
     <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
-        <strong>💡 예시 상황들:</strong><br>
-        • 친구와 놀다가 다쳤을 때<br>
-        • 시험에서 좋은 점수를 받았을 때<br>
-        • 새로운 친구를 만났을 때<br>
-        • 숙제를 깜빡했을 때
+        <strong>💡 {current_age} 학교생활 상황 예시:</strong><br>
+        {'<br>'.join([f'• {situation}' for situation in situations])}
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("오늘 있었던 일이나 기억에 남는 상황을 자세히 적어주세요.")
+    st.markdown("위 예시를 참고하거나, 직접 경험한 학교생활 상황을 자세히 적어주세요.")
     
     situation = st.text_area(
         "상황 설명",
-        placeholder="예: 친구와 함께 놀이터에서 놀다가 넘어져서 무릎이 다쳤어요.",
+        placeholder=f"예: {situations[0]}",
         height=100
     )
     
