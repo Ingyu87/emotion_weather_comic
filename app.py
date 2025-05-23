@@ -10,7 +10,7 @@ GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
 
 # 페이지 설정
 st.set_page_config(
-    page_title="4컷 만화 스토리보드 생성기",
+    page_title="4컷 만화 프롬프트 만들기",
     page_icon="📋",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -902,7 +902,7 @@ elif st.session_state.current_step == 4:
             st.rerun()
     
     with col3:
-        if st.button("🎬 스토리보드 만들기! 🎬", disabled=not reason_valid, key="step4_final", use_container_width=True):
+        if st.button("🎬 프롬프트트 만들기! 🎬", disabled=not reason_valid, key="step4_final", use_container_width=True):
             if reason_valid:
                 is_valid, message = validate_text_input(reason, min_length=5, max_length=150, field_name="감정의 이유")
                 if is_valid:
