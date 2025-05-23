@@ -309,6 +309,30 @@ with col2:
 if st.session_state.current_step == 1:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     
+    # 안전 사용 안내
+    st.markdown("""
+    <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem;">
+        <h4 style="color: #856404; margin-bottom: 1rem;">🛡️ 안전한 사용을 위한 안내</h4>
+        <div style="color: #856404; font-size: 1rem; line-height: 1.6;">
+            <strong>📚 이 도구는 초등학생의 건전한 감정 표현 학습을 위해 만들어졌습니다.</strong><br><br>
+            
+            <strong>🚫 다음과 같은 내용은 자동으로 차단됩니다:</strong><br>
+            • 욕설, 폭언, 혐오 표현<br>
+            • 폭력적이거나 위험한 내용<br>
+            • 부적절한 성적 표현<br>
+            • 정치적 인물이나 논란적 내용<br>
+            • 의미 없는 글자 나열<br><br>
+            
+            <strong>✅ 이런 건전한 내용을 사용해주세요:</strong><br>
+            • 친구와의 우정 이야기<br>
+            • 학교에서의 즐거운 경험<br>
+            • 가족과의 따뜻한 시간<br>
+            • 새로운 것을 배우는 기쁨<br>
+            • 도움을 주고받는 경험
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # 시작 안내 메시지
     st.markdown("""
     <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); border-radius: 15px; margin-bottom: 2rem;">
@@ -418,49 +442,75 @@ elif st.session_state.current_step == 2:
     
     # 실시간 입력 검증
     if situation and len(situation.strip()) >= 5:
-        # 간단한 키워드 기반 실시간 검증 (빠른 응답을 위해)
-        quick_check_words = [
-            "바보", "멍청", "죽어", "꺼져", "시발", "병신", "미친",
-            "김정은", "트럼프", "윤석열", "때리", "싸우", "폭력",
-            "비키니", "키스", "섹시", "담배", "술", "마약"
-        ]
+        # AI 기반 실시간 문맥 검증
+        context_check_prompt = f"""
+다음 텍스트가 초등학생에게 적합한지 문맥을 고려하여 판단해주세요:
+
+텍스트: "{situation}"
+
+판단 기준:
+- 폭력적이거나 위험한 내용인가?
+- 욕설이나 혐오 표현이 있는가?
+- 성적이거나 부적절한 내용인가?
+- 정치적 인물이나 논란적 내용인가?
+- 의미있는 문장인가?
+- 초등학생 교육환경에 적합한가?
+
+예시:
+- "친구와 죽 먹기" → 적합 (음식 이야기)
+- "괴물을 죽이기" → 부적절 (폭력적 내용)
+- "김정은 만나기" → 부적절 (정치적 인물)
+
+"적합" 또는 "부적절" 중 하나로만 답변하세요:
+"""
         
-        has_inappropriate = False
-        found_word = ""
-        for word in quick_check_words:
-            if word in situation.lower():
-                has_inappropriate = True
-                found_word = word
-                break
-        
-        if has_inappropriate:
-            st.markdown(f'''
-            <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                🚨 <strong>'{found_word}' 같은 표현은 사용할 수 없어요!</strong><br><br>
-                📚 <strong>디지털 시민 교육:</strong> 학교에서는 모든 친구들이 안전하고 편안하게 느낄 수 있는 말을 사용해야 해요.<br><br>
-                ✨ <strong>건전한 내용으로 바꿔주세요:</strong><br>
-                • 친구와 사이좋게 놀이터에서 놀았을 때<br>
-                • 선생님께 칭찬을 받아서 기뻤을 때<br>
-                • 새로운 것을 배워서 뿌듯했을 때
-            </div>
-            ''', unsafe_allow_html=True)
+        try:
+            ai_response = ask_gemini(context_check_prompt)
             
-            # 부적절한 내용이 있으면 버튼 비활성화
-            situation_valid = False
-        else:
-            # 무의미한 입력 체크 (간단한 패턴)
-            if len(set(situation.replace(" ", ""))) < 3:  # 문자 종류가 3개 미만
+            if ai_response and "부적절" in ai_response:
+                st.markdown(f'''
+                <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                    🚨 <strong>이 내용은 초등학생에게 적합하지 않아요!</strong><br><br>
+                    📚 <strong>디지털 시민 교육:</strong> 학교에서는 모든 친구들이 안전하고 편안하게 느낄 수 있는 내용을 사용해야 해요.<br><br>
+                    ✨ <strong>건전한 내용으로 바꿔주세요:</strong><br>
+                    • 친구와 사이좋게 놀이터에서 놀았을 때<br>
+                    • 선생님께 칭찬을 받아서 기뻤을 때<br>
+                    • 새로운 것을 배워서 뿌듯했을 때
+                </div>
+                ''', unsafe_allow_html=True)
+                situation_valid = False
+            elif ai_response and "적합" in ai_response:
+                st.markdown('<div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">✅ 좋은 상황 설명이에요!</div>', unsafe_allow_html=True)
+                situation_valid = True
+            else:
+                # AI 응답이 애매하면 기본 키워드 체크
+                quick_check_words = ["시발", "병신", "김정은", "트럼프", "윤석열"]
+                has_inappropriate = any(word in situation.lower() for word in quick_check_words)
+                
+                if has_inappropriate:
+                    st.markdown('''
+                    <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                        🚨 <strong>부적절한 표현이 포함되어 있어요!</strong>
+                    </div>
+                    ''', unsafe_allow_html=True)
+                    situation_valid = False
+                else:
+                    st.markdown('<div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">✅ 좋은 상황 설명이에요!</div>', unsafe_allow_html=True)
+                    situation_valid = True
+        except:
+            # AI 검증 실패 시 기본 키워드 체크
+            quick_check_words = ["시발", "병신", "김정은", "트럼프", "윤석열"]
+            has_inappropriate = any(word in situation.lower() for word in quick_check_words)
+            
+            if has_inappropriate:
                 st.markdown('''
-                <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                    ⚠️ <strong>의미있는 문장을 작성해주세요!</strong><br><br>
-                    같은 글자를 반복하거나 무의미한 입력은 사용할 수 없어요.<br>
-                    학교생활에서 실제로 경험한 상황을 적어주세요.
+                <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                    🚨 <strong>부적절한 표현이 포함되어 있어요!</strong>
                 </div>
                 ''', unsafe_allow_html=True)
                 situation_valid = False
             else:
-                st.markdown('<div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">✅ 좋은 상황 설명이에요!</div>', unsafe_allow_html=True)
-                situation_valid = True
+                situation_valid = len(situation.strip()) >= 10
     else:
         situation_valid = len(situation.strip()) >= 10 if situation else False
     
@@ -533,39 +583,66 @@ elif st.session_state.current_step == 4:
     
     # 실시간 입력 검증 (이유 입력)
     if reason and len(reason.strip()) >= 3:
-        quick_check_words = [
-            "바보", "멍청", "죽어", "꺼져", "시발", "병신", "미친",
-            "김정은", "트럼프", "윤석열", "때리", "싸우", "폭력",
-            "비키니", "키스", "섹시", "담배", "술", "마약"
-        ]
+        # AI 기반 문맥 검증
+        reason_check_prompt = f"""
+다음 텍스트가 초등학생에게 적합한지 문맥을 고려하여 판단해주세요:
+
+텍스트: "{reason}"
+
+판단 기준:
+- 폭력적이거나 위험한 내용인가?
+- 욕설이나 혐오 표현이 있는가?
+- 성적이거나 부적절한 내용인가?
+- 정치적 인물이나 논란적 내용인가?
+- 의미있는 문장인가?
+- 초등학생 교육환경에 적합한가?
+
+"적합" 또는 "부적절" 중 하나로만 답변하세요:
+"""
         
-        has_inappropriate = False
-        found_word = ""
-        for word in quick_check_words:
-            if word in reason.lower():
-                has_inappropriate = True
-                found_word = word
-                break
-        
-        if has_inappropriate:
-            st.markdown(f'''
-            <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                🚨 <strong>'{found_word}' 같은 표현은 사용할 수 없어요!</strong><br><br>
-                ✨ 감정의 이유를 건전하고 교육적으로 표현해주세요.
-            </div>
-            ''', unsafe_allow_html=True)
-            reason_valid = False
-        else:
-            if len(set(reason.replace(" ", ""))) < 3:
+        try:
+            ai_response = ask_gemini(reason_check_prompt)
+            
+            if ai_response and "부적절" in ai_response:
+                st.markdown(f'''
+                <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                    🚨 <strong>이 내용은 초등학생에게 적합하지 않아요!</strong><br><br>
+                    ✨ 감정의 이유를 건전하고 교육적으로 표현해주세요.
+                </div>
+                ''', unsafe_allow_html=True)
+                reason_valid = False
+            elif ai_response and "적합" in ai_response:
+                st.markdown('<div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">✅ 감정을 잘 표현해주셨어요!</div>', unsafe_allow_html=True)
+                reason_valid = True
+            else:
+                # AI 응답이 애매하면 기본 체크
+                quick_check_words = ["시발", "병신", "김정은", "트럼프"]
+                has_inappropriate = any(word in reason.lower() for word in quick_check_words)
+                
+                if has_inappropriate:
+                    st.markdown('''
+                    <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                        🚨 <strong>부적절한 표현이 포함되어 있어요!</strong>
+                    </div>
+                    ''', unsafe_allow_html=True)
+                    reason_valid = False
+                else:
+                    st.markdown('<div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">✅ 감정을 잘 표현해주셨어요!</div>', unsafe_allow_html=True)
+                    reason_valid = True
+        except:
+            # AI 검증 실패 시 기본 키워드 체크
+            quick_check_words = ["시발", "병신", "김정은", "트럼프"]
+            has_inappropriate = any(word in reason.lower() for word in quick_check_words)
+            
+            if has_inappropriate:
                 st.markdown('''
-                <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                    ⚠️ <strong>의미있는 문장을 작성해주세요!</strong>
+                <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                    🚨 <strong>부적절한 표현이 포함되어 있어요!</strong>
                 </div>
                 ''', unsafe_allow_html=True)
                 reason_valid = False
             else:
-                st.markdown('<div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">✅ 감정을 잘 표현해주셨어요!</div>', unsafe_allow_html=True)
-                reason_valid = True
+                reason_valid = len(reason.strip()) >= 5
     else:
         reason_valid = len(reason.strip()) >= 5 if reason else False
     
