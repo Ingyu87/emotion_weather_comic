@@ -44,11 +44,11 @@ st.markdown("""
         background: #3498db !important;
     }
     
-    /* 워터마크 - 더 명확하게 */
+    /* 워터마크 - 왼쪽 하단으로 */
     .watermark {
         position: fixed;
         bottom: 20px;
-        right: 20px;
+        left: 20px;
         font-size: 12px;
         color: #666666;
         background: rgba(255, 255, 255, 0.8);
