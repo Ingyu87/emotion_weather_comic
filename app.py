@@ -171,6 +171,7 @@ def init_session_state():
         "current_step": 1,
         "age_group": None,
         "gender": None,
+        "art_style": None,
         "situation": None,
         "emotion": None,
         "reason": None,
@@ -369,17 +370,37 @@ if st.session_state.current_step == 1:
         gender_emoji = "👦" if gender == "남자" else "👧"
         st.info(f"{gender_emoji} {gender} 주인공으로 만화를 만들어요!")
     
+    # 화풍 선택 추가
+    st.markdown("### 🎨 만화 화풍을 선택하세요")
+    art_styles = {
+        "귀여운 애니메이션": "🌟 지브리, 디즈니 같은 부드럽고 따뜻한 애니메이션 스타일",
+        "한국 웹툰": "📱 네이버 웹툰 같은 깔끔하고 현대적인 한국 웹툰 스타일", 
+        "3D 캐릭터": "🎭 픽사, 토이스토리 같은 입체적이고 생동감 있는 3D 스타일",
+        "피규어 형태": "🧸 레고, 플레이모빌 같은 귀여운 피규어/장난감 스타일",
+        "낙서 형태": "✏️ 공책에 그린 듯한 자유롭고 친근한 손그림 낙서 스타일",
+        "수채화": "🖼️ 부드럽고 몽환적인 수채화 일러스트 스타일",
+        "동화책": "📚 따뜻하고 상상력 가득한 동화책 삽화 스타일"
+    }
+    
+    selected_style = st.radio("화풍 선택", list(art_styles.keys()), horizontal=False)
+    
+    if selected_style:
+        st.info(f"🎨 {art_styles[selected_style]}")
+    
     col1, col2 = st.columns([3, 1])
     with col2:
         if st.button("다음 단계 ➡️"):
-            if validate_age_group(selected_age) and gender:
+            if validate_age_group(selected_age) and gender and selected_style:
                 st.session_state.age_group = selected_age
                 st.session_state.gender = gender
+                st.session_state.art_style = selected_style
                 st.session_state.current_step = 2
                 st.rerun()
             else:
                 if not gender:
                     st.error("성별을 선택해주세요!")
+                elif not selected_style:
+                    st.error("화풍을 선택해주세요!")
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif st.session_state.current_step == 2:
@@ -468,11 +489,11 @@ elif st.session_state.current_step == 2:
             ai_response = ask_gemini(context_check_prompt)
             
             if ai_response and "부적절" in ai_response:
-                st.markdown(f'''
+                st.markdown('''
                 <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
                     🚨 <strong>이 내용은 초등학생에게 적합하지 않아요!</strong><br><br>
                     📚 <strong>디지털 시민 교육:</strong> 학교에서는 모든 친구들이 안전하고 편안하게 느낄 수 있는 내용을 사용해야 해요.<br><br>
-                    ✨ <strong>건전한 내용으로 바꿔주세요:</strong><br>
+                    ✅ <strong>건전한 내용으로 바꿔주세요:</strong><br>
                     • 친구와 사이좋게 놀이터에서 놀았을 때<br>
                     • 선생님께 칭찬을 받아서 기뻤을 때<br>
                     • 새로운 것을 배워서 뿌듯했을 때
@@ -480,7 +501,11 @@ elif st.session_state.current_step == 2:
                 ''', unsafe_allow_html=True)
                 situation_valid = False
             elif ai_response and "적합" in ai_response:
-                st.markdown('<div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">✅ 좋은 상황 설명이에요!</div>', unsafe_allow_html=True)
+                st.markdown('''
+                <div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                    ✅ <strong>좋은 상황 설명이에요!</strong>
+                </div>
+                ''', unsafe_allow_html=True)
                 situation_valid = True
             else:
                 # AI 응답이 애매하면 기본 키워드 체크
@@ -495,7 +520,11 @@ elif st.session_state.current_step == 2:
                     ''', unsafe_allow_html=True)
                     situation_valid = False
                 else:
-                    st.markdown('<div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">✅ 좋은 상황 설명이에요!</div>', unsafe_allow_html=True)
+                    st.markdown('''
+                    <div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                        ✅ <strong>좋은 상황 설명이에요!</strong>
+                    </div>
+                    ''', unsafe_allow_html=True)
                     situation_valid = True
         except:
             # AI 검증 실패 시 기본 키워드 체크
@@ -604,15 +633,19 @@ elif st.session_state.current_step == 4:
             ai_response = ask_gemini(reason_check_prompt)
             
             if ai_response and "부적절" in ai_response:
-                st.markdown(f'''
+                st.markdown('''
                 <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
                     🚨 <strong>이 내용은 초등학생에게 적합하지 않아요!</strong><br><br>
-                    ✨ 감정의 이유를 건전하고 교육적으로 표현해주세요.
+                    ✅ 감정의 이유를 건전하고 교육적으로 표현해주세요.
                 </div>
                 ''', unsafe_allow_html=True)
                 reason_valid = False
             elif ai_response and "적합" in ai_response:
-                st.markdown('<div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">✅ 감정을 잘 표현해주셨어요!</div>', unsafe_allow_html=True)
+                st.markdown('''
+                <div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                    ✅ <strong>감정을 잘 표현해주셨어요!</strong>
+                </div>
+                ''', unsafe_allow_html=True)
                 reason_valid = True
             else:
                 # AI 응답이 애매하면 기본 체크
@@ -627,7 +660,11 @@ elif st.session_state.current_step == 4:
                     ''', unsafe_allow_html=True)
                     reason_valid = False
                 else:
-                    st.markdown('<div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">✅ 감정을 잘 표현해주셨어요!</div>', unsafe_allow_html=True)
+                    st.markdown('''
+                    <div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                        ✅ <strong>감정을 잘 표현해주셨어요!</strong>
+                    </div>
+                    ''', unsafe_allow_html=True)
                     reason_valid = True
         except:
             # AI 검증 실패 시 기본 키워드 체크
@@ -674,6 +711,7 @@ elif st.session_state.current_step == 5:
     with st.expander("📋 입력 정보 확인", expanded=False):
         st.write(f"**👤 나이대:** {st.session_state.age_group}")
         st.write(f"**👦👧 성별:** {st.session_state.gender}")
+        st.write(f"**🎨 화풍:** {st.session_state.art_style}")
         st.write(f"**📝 상황:** {st.session_state.situation}")
         st.write(f"**😊 감정:** {st.session_state.emotion}")
         st.write(f"**💭 이유:** {st.session_state.reason}")
@@ -790,6 +828,11 @@ elif st.session_state.current_step == 5:
             st.markdown(f"### 🎬 컷 {i+1}")
             st.write(f"**장면 설명:** {scene}")
             
+            # 각 컷별 개별 프롬프트 표시
+            if len(st.session_state.scene_prompts) > i:
+                st.markdown("**🤖 이 컷의 개별 프롬프트:**")
+                st.code(st.session_state.scene_prompts[i], language="text")
+            
             st.divider()
     else:
         st.error("❌ 장면 생성에 실패했습니다. '다시 만들기' 버튼을 눌러 다시 시도해주세요.")
@@ -798,7 +841,7 @@ elif st.session_state.current_step == 5:
     
     with col1:
         if st.button("🔄 다시 만들기"):
-            keys_to_reset = ["age_group", "gender", "situation", "emotion", "reason", "scenes", "scene_prompts", "emotion_options", "counted"]
+            keys_to_reset = ["age_group", "gender", "art_style", "situation", "emotion", "reason", "scenes", "scene_prompts", "emotion_options", "counted"]
             for key in keys_to_reset:
                 if key in st.session_state:
                     del st.session_state[key]
@@ -827,9 +870,23 @@ elif st.session_state.current_step == 5:
         # 4컷 만화 생성용 통합 프롬프트
         character_desc = f"{'Korean elementary school boy' if st.session_state.gender == '남자' else 'Korean elementary school girl'}"
         
+        # 화풍별 스타일 정의
+        style_prompts = {
+            "귀여운 애니메이션": "Studio Ghibli style, Disney animation style, soft colors, magical atmosphere",
+            "한국 웹툰": "Korean webtoon style, clean lines, vibrant colors, modern digital art",
+            "3D 캐릭터": "Pixar 3D animation style, volumetric lighting, detailed textures, playful 3D characters",
+            "피규어 형태": "LEGO minifigure style, Playmobil toy style, cute figurine aesthetic", 
+            "낙서 형태": "Hand-drawn doodle style, sketch-like, casual drawing, notebook doodle aesthetic",
+            "수채화": "Watercolor illustration, soft brushstrokes, gentle colors, dreamy atmosphere",
+            "동화책": "Children's book illustration, storybook art style, warm and cozy"
+        }
+        
+        art_style_prompt = style_prompts.get(st.session_state.art_style, "cute anime/manga style")
+        
         four_panel_prompt = f"""Create a 4-panel comic strip (네컷 만화) with consistent character design throughout all panels:
 
 Character: {character_desc} ({st.session_state.age_group})
+Art Style: {art_style_prompt}
 Story theme: {st.session_state.situation}
 Main emotion: {st.session_state.emotion}
 Reason for emotion: {st.session_state.reason}
@@ -839,7 +896,7 @@ Panel 2: {st.session_state.scenes[1] if len(st.session_state.scenes) > 1 else ""
 Panel 3: {st.session_state.scenes[2] if len(st.session_state.scenes) > 2 else ""}
 Panel 4: {st.session_state.scenes[3] if len(st.session_state.scenes) > 3 else ""}
 
-Art style: Cute anime/manga style, safe for children, educational content, wholesome, school-appropriate, consistent character design across all panels, colorful, child-friendly."""
+Safety requirements: Safe for children, educational content, wholesome, school-appropriate, consistent character design across all panels, colorful, child-friendly."""
         
         st.markdown("**🎨 아래 프롬프트를 복사해서 AI 이미지 생성 사이트에 붙여넣으세요:**")
         st.text_area("4컷 만화 생성 프롬프트", four_panel_prompt, height=250, key="four_panel_final")
