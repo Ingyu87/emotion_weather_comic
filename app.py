@@ -365,8 +365,8 @@ def render_step_indicator(current_step):
 
 def render_progress_bar(progress):
     html = f'''
-    <div class="progress-container">
-        <div class="progress-bar" style="width: {progress}%"></div>
+    <div style="width: 100%; height: 6px; background: #ecf0f1; border-radius: 3px; margin: 1rem 0;">
+        <div style="width: {progress}%; height: 100%; background: #3498db; border-radius: 3px; transition: width 0.3s ease;"></div>
     </div>
     '''
     st.markdown(html, unsafe_allow_html=True)
@@ -587,12 +587,96 @@ elif st.session_state.current_step == 2:
     situation_valid = len(situation.strip()) >= 10 if situation else False
     
     if situation and len(situation.strip()) >= 5:
-        if situation_valid:
-            st.markdown('''
-            <div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                ✅ <strong>좋은 상황 설명이에요!</strong>
-            </div>
-            ''', unsafe_allow_html=True)
+        # AI 기반 실시간 문맥 검증 (키워드 체크 먼저 하지 않고 문맥으로 판단)
+        try:
+            context_check_prompt = f"""
+다음 텍스트가 초등학생에게 적합한지 문맥을 고려하여 판단해주세요:
+
+텍스트: "{situation}"
+
+판단 기준:
+- 문맥상 폭력적이거나 위험한 의도가 있는가?
+- 문맥상 욕설이나 혐오 표현의 의도가 있는가?
+- 문맥상 성적이거나 부적절한 내용인가?
+- 정치적 인물이나 논란적 내용인가?
+- 의미있는 교육적 상황인가?
+- 초등학생 교육환경에 적합한가?
+
+문맥 예시:
+- "친구와 죽 먹기" → 적합 (음식을 먹는 이야기)
+- "괴물을 죽이기" → 부적절 (폭력적 내용)
+- "김정은 만나기" → 부적절 (정치적 인물)
+- "시험을 망쳤어" → 적합 (학교 상황 표현)
+- "선생님이 미쳤다고 했어" → 부적절 (부적절한 표현)
+
+문맥상 의미를 종합적으로 고려하여 "적합" 또는 "부적절" 중 하나로만 답변하세요:
+"""
+            
+            ai_response = ask_gemini(context_check_prompt)
+            
+            if ai_response and "부적절" in ai_response:
+                st.markdown('''
+                <div style="background: #ffebee; border: 2px solid #f44336; padding: 1.5rem; border-radius: 15px; margin: 1rem 0;">
+                    🚨 <strong style="color: #d32f2f; font-size: 1.2rem;">부적절한 내용이 감지되었습니다!</strong><br><br>
+                    
+                    <div style="background: #ffcdd2; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                        📚 <strong>디지털 시민 교육:</strong><br>
+                        학교에서는 모든 친구들이 안전하고 편안하게 느낄 수 있는 내용만 사용해야 해요.<br>
+                        욕설, 폭력적 표현, 부적절한 내용은 다른 사람에게 상처를 줄 수 있습니다.
+                    </div>
+                    
+                    <strong style="color: #d32f2f;">✅ 이런 건전한 내용으로 바꿔주세요:</strong><br>
+                    • 친구와 사이좋게 놀이터에서 놀았을 때<br>
+                    • 선생님께 칭찬을 받아서 기뻤을 때<br>
+                    • 새로운 것을 배워서 뿌듯했을 때<br>
+                    • 친구에게 도움을 주거나 받았을 때<br>
+                    • 가족과 함께 즐거운 시간을 보냈을 때
+                    
+                    <div style="margin-top: 1rem; padding: 0.8rem; background: #e3f2fd; border-radius: 8px;">
+                        💡 <strong>팁:</strong> 학교생활에서 실제로 경험했던 긍정적이고 교육적인 상황을 써보세요!
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+                situation_valid = False
+            elif ai_response and "적합" in ai_response:
+                if len(situation.strip()) >= 10:
+                    st.markdown('''
+                    <div style="background: #d4edda; border: 2px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                        ✅ <strong style="color: #155724;">훌륭한 상황 설명이에요!</strong><br>
+                        건전하고 교육적인 내용으로 멋진 만화를 만들 수 있을 거예요! 👍
+                    </div>
+                    ''', unsafe_allow_html=True)
+                    situation_valid = True
+                else:
+                    situation_valid = False
+            else:
+                # AI 응답이 애매하면 기본 키워드로 한번 더 체크
+                inappropriate_words = ["시발", "병신", "김정은", "트럼프", "윤석열", "죽어", "꺼져"]
+                has_inappropriate = any(word in situation.lower() for word in inappropriate_words)
+                
+                if has_inappropriate:
+                    st.markdown('''
+                    <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                        🚨 <strong>부적절한 표현이 포함되어 있어요!</strong>
+                    </div>
+                    ''', unsafe_allow_html=True)
+                    situation_valid = False
+                else:
+                    situation_valid = len(situation.strip()) >= 10
+        except:
+            # AI 검증 실패 시 기본 키워드 체크
+            inappropriate_words = ["시발", "병신", "김정은", "트럼프", "윤석열", "죽어", "꺼져"]
+            has_inappropriate = any(word in situation.lower() for word in quick_check_words)
+            
+            if has_inappropriate:
+                st.markdown('''
+                <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                    🚨 <strong>부적절한 표현이 포함되어 있어요!</strong>
+                </div>
+                ''', unsafe_allow_html=True)
+                situation_valid = False
+            else:
+                situation_valid = len(situation.strip()) >= 10
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col1:
@@ -687,12 +771,95 @@ elif st.session_state.current_step == 4:
     reason_valid = len(reason.strip()) >= 5 if reason else False
     
     if reason and len(reason.strip()) >= 3:
-        if reason_valid:
-            st.markdown('''
-            <div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                ✅ <strong>감정을 잘 표현해주셨어요!</strong>
-            </div>
-            ''', unsafe_allow_html=True)
+        # AI 기반 실시간 문맥 검증 (감정 이유도 문맥으로 판단)
+        try:
+            reason_check_prompt = f"""
+다음 감정의 이유가 초등학생에게 적합한지 문맥을 고려하여 판단해주세요:
+
+텍스트: "{reason}"
+
+판단 기준:
+- 문맥상 폭력적이거나 위험한 의도가 있는가?
+- 문맥상 욕설이나 혐오 표현의 의도가 있는가?
+- 문맥상 성적이거나 부적절한 내용인가?
+- 정치적 인물이나 논란적 내용인가?
+- 의미있는 감정 표현인가?
+- 초등학생 교육환경에 적합한가?
+
+문맥 예시:
+- "죽도록 열심히 했는데" → 적합 (열심히 노력했다는 의미)
+- "친구를 죽이고 싶었어" → 부적절 (폭력적 표현)
+- "미친듯이 기뻤어" → 적합 (매우 기뻤다는 의미)
+- "선생님이 미쳤다고 생각해" → 부적절 (비하 표현)
+
+문맥상 의미를 종합적으로 고려하여 "적합" 또는 "부적절" 중 하나로만 답변하세요:
+"""
+            
+            ai_response = ask_gemini(reason_check_prompt)
+            
+            if ai_response and "부적절" in ai_response:
+                st.markdown('''
+                <div style="background: #ffebee; border: 2px solid #f44336; padding: 1.5rem; border-radius: 15px; margin: 1rem 0;">
+                    🚨 <strong style="color: #d32f2f; font-size: 1.2rem;">부적절한 감정 표현이 감지되었습니다!</strong><br><br>
+                    
+                    <div style="background: #ffcdd2; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                        📚 <strong>감정 교육:</strong><br>
+                        감정의 이유를 표현할 때도 건전하고 교육적인 언어를 사용해야 해요.<br>
+                        부정적인 감정도 적절한 표현으로 나타낼 수 있답니다.
+                    </div>
+                    
+                    <strong style="color: #d32f2f;">✅ 이런 건전한 표현으로 바꿔주세요:</strong><br>
+                    • "친구가 나를 이해해주지 않아서 속상했어요"<br>
+                    • "기대했던 것과 달라서 실망스러웠어요"<br>
+                    • "새로운 도전이라 긴장되고 두려웠어요"<br>
+                    • "노력한 만큼 결과가 나와서 뿌듯했어요"<br>
+                    • "친구들과 함께 해서 더욱 즐거웠어요"
+                    
+                    <div style="margin-top: 1rem; padding: 0.8rem; background: #e3f2fd; border-radius: 8px;">
+                        💡 <strong>팁:</strong> 감정을 느낀 구체적이고 교육적인 이유를 써보세요!
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+                reason_valid = False
+            elif ai_response and "적합" in ai_response:
+                if len(reason.strip()) >= 5:
+                    st.markdown('''
+                    <div style="background: #d4edda; border: 2px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                        ✅ <strong style="color: #155724;">감정을 훌륭하게 표현해주셨어요!</strong><br>
+                        이런 솔직하고 건전한 감정 표현이 좋은 교육 자료가 됩니다! 👏
+                    </div>
+                    ''', unsafe_allow_html=True)
+                    reason_valid = True
+                else:
+                    reason_valid = False
+            else:
+                # AI 응답이 애매하면 기본 키워드로 한번 더 체크
+                inappropriate_words = ["시발", "병신", "김정은", "트럼프"]
+                has_inappropriate = any(word in reason.lower() for word in inappropriate_words)
+                
+                if has_inappropriate:
+                    st.markdown('''
+                    <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                        🚨 <strong>부적절한 표현이 포함되어 있어요!</strong>
+                    </div>
+                    ''', unsafe_allow_html=True)
+                    reason_valid = False
+                else:
+                    reason_valid = len(reason.strip()) >= 5
+        except:
+            # AI 검증 실패 시 기본 키워드 체크
+            inappropriate_words = ["시발", "병신", "김정은", "트럼프"]
+            has_inappropriate = any(word in reason.lower() for word in inappropriate_words)
+            
+            if has_inappropriate:
+                st.markdown('''
+                <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                    🚨 <strong>부적절한 표현이 포함되어 있어요!</strong>
+                </div>
+                ''', unsafe_allow_html=True)
+                reason_valid = False
+            else:
+                reason_valid = len(reason.strip()) >= 5
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col1:
