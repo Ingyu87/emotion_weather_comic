@@ -1,33 +1,15 @@
-/* 전역 텍스트 색상 강제 적용 */
-.stApp * {
-    color: #000000 !important;
-}
-
-.stMarkdown, .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-    color: #000000 !important;
-}
-
-.stRadio label, .stTextArea label {
-    color: #000000 !important;
-}
-
-/* 버튼 텍스트는 흰색 유지 */
-.stButton > button {
-    color: white !important;
-}import streamlit as st
+import streamlit as st
 import requests
 import json
 import re
 from datetime import datetime
 import time
 
-# API 키 설정
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
 WEATHER_API_KEY = st.secrets.get("WEATHER_API_KEY")
 DALL_E_API_KEY = st.secrets.get("DALL_E_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 CITY = "Seoul"
 
-# 페이지 설정
 st.set_page_config(
     page_title="AI 4컷 만화 생성기", 
     page_icon="🎨", 
@@ -35,47 +17,42 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 커스텀 CSS
 st.markdown("""
 <style>
+    .stApp * {
+        color: #000000 !important;
+    }
+    .stButton > button {
+        color: white !important;
+    }
     .stApp {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         font-family: 'Noto Sans KR', sans-serif;
     }
-    
     .main-container {
         background: rgba(255, 255, 255, 0.98);
         padding: 2rem;
         border-radius: 20px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         margin: 1rem auto;
-        backdrop-filter: blur(10px);
         max-width: 900px;
-        border: 1px solid rgba(255,255,255,0.2);
     }
-    
     .main-title {
         text-align: center;
-        color: #000000;
         font-size: 2.5rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
     }
-    
     .subtitle {
         text-align: center;
-        color: #000000;
         font-size: 1.1rem;
         margin-bottom: 2rem;
-        font-weight: 500;
     }
-    
     .step-indicator {
         display: flex;
         justify-content: center;
         margin-bottom: 2rem;
     }
-    
     .step {
         width: 40px;
         height: 40px;
@@ -85,34 +62,26 @@ st.markdown("""
         justify-content: center;
         margin: 0 1rem;
         font-weight: bold;
-        position: relative;
     }
-    
     .step.active {
         background: #3498db;
         color: white;
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
     }
-    
     .step.completed {
         background: #27ae60;
         color: white;
     }
-    
     .step.inactive {
         background: #ecf0f1;
         color: #000000;
     }
-    
     .card {
         background: white;
         padding: 1.5rem;
         border-radius: 15px;
         box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         margin-bottom: 1rem;
-        border: 1px solid #e8ecef;
     }
-    
     .stButton > button {
         width: 100%;
         height: 50px;
@@ -122,51 +91,21 @@ st.markdown("""
         color: white;
         font-weight: 600;
         font-size: 1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
     }
-    
-    .stButton > button:hover {
-        background: #2980b9;
-        transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(52, 152, 219, 0.4);
-    }
-    
-    .emotion-btn {
-        padding: 1rem;
-        border-radius: 15px;
-        border: 2px solid #e8ecef;
-        background: white;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    
-    .emotion-btn:hover {
-        border-color: #3498db;
-        background: #f8f9ff;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
-    }
-    
     .warning-box {
         background: #fff3cd;
         border: 1px solid #f39c12;
-        color: #000000;
         padding: 1rem;
         border-radius: 10px;
         margin: 1rem 0;
     }
-    
     .success-box {
         background: #d4edda;
         border: 1px solid #27ae60;
-        color: #000000;
         padding: 1rem;
         border-radius: 10px;
         margin: 1rem 0;
     }
-    
     .progress-container {
         width: 100%;
         height: 6px;
@@ -174,7 +113,6 @@ st.markdown("""
         border-radius: 3px;
         margin: 1rem 0;
     }
-    
     .progress-bar {
         height: 100%;
         background: #3498db;
@@ -184,7 +122,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 세션 상태 초기화
 def init_session_state():
     defaults = {
         "call_count": 0,
@@ -202,7 +139,6 @@ def init_session_state():
         if key not in st.session_state:
             st.session_state[key] = value
 
-# 입력 검증 함수들
 def validate_text_input(text, min_length=5, max_length=200, field_name="입력"):
     if not text or not text.strip():
         return False, f"{field_name}을 입력해주세요."
@@ -214,18 +150,12 @@ def validate_text_input(text, min_length=5, max_length=200, field_name="입력")
     if len(text) > max_length:
         return False, f"{field_name}은 최대 {max_length}자까지 입력 가능합니다."
     
-    inappropriate_words = ["욕설", "비방", "혐오", "폭력"]
-    for word in inappropriate_words:
-        if word in text:
-            return False, "부적절한 내용이 포함되어 있습니다. 다시 입력해주세요."
-    
     return True, ""
 
 def validate_age_group(age_group):
     valid_ages = ["초등학교 1~2학년", "초등학교 3~4학년", "초등학교 5~6학년", "교사"]
     return age_group in valid_ages
 
-# API 함수들
 def ask_gemini(prompt, model="models/gemini-1.5-pro-latest"):
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/{model}:generateContent?key={GEMINI_API_KEY}"
@@ -238,14 +168,8 @@ def ask_gemini(prompt, model="models/gemini-1.5-pro-latest"):
         result = response.json()
         return result["candidates"][0]["content"]["parts"][0]["text"]
         
-    except requests.exceptions.Timeout:
-        return "[오류] 요청 시간이 초과되었습니다."
-    except requests.exceptions.RequestException as e:
-        return f"[오류] 네트워크 오류: {str(e)}"
-    except KeyError:
-        return "[오류] API 응답 형식이 올바르지 않습니다."
-    except Exception as e:
-        return f"[오류] 예상치 못한 오류: {str(e)}"
+    except:
+        return "[오류] API 호출에 실패했습니다."
 
 def generate_image(prompt):
     try:
@@ -266,7 +190,6 @@ def generate_image(prompt):
         response.raise_for_status()
         
         return response.json()["data"][0]["url"]
-        
     except:
         return ""
 
@@ -286,7 +209,6 @@ def fetch_emotions(situation):
     negative_emotions = ["슬픔", "화남", "답답함", "걱정", "두려움", "실망", "부끄러움", "외로움", "스트레스", "짜증"]
     return positive_emotions, negative_emotions
 
-# UI 컴포넌트들
 def render_step_indicator(current_step):
     steps = ["👤", "📝", "😊", "💭", "🎨"]
     
@@ -312,7 +234,6 @@ def render_progress_bar(progress):
     '''
     st.markdown(html, unsafe_allow_html=True)
 
-# 메인 앱
 init_session_state()
 
 if st.session_state.call_count >= 20:
