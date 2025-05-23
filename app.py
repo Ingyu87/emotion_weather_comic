@@ -311,28 +311,27 @@ if st.session_state.current_step == 1:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     
     # 안전 사용 안내
+    st.warning("🛡️ **안전한 사용을 위한 안내**")
+    
     st.markdown("""
-    <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem;">
-        <h4 style="color: #856404; margin-bottom: 1rem;">🛡️ 안전한 사용을 위한 안내</h4>
-        <div style="color: #856404; font-size: 1rem; line-height: 1.6;">
-            <strong>📚 이 도구는 초등학생의 건전한 감정 표현 학습을 위해 만들어졌습니다.</strong><br><br>
-            
-            <strong>🚫 다음과 같은 내용은 자동으로 차단됩니다:</strong><br>
-            • 욕설, 폭언, 혐오 표현<br>
-            • 폭력적이거나 위험한 내용<br>
-            • 부적절한 성적 표현<br>
-            • 정치적 인물이나 논란적 내용<br>
-            • 의미 없는 글자 나열<br><br>
-            
-            <strong>✅ 이런 건전한 내용을 사용해주세요:</strong><br>
-            • 친구와의 우정 이야기<br>
-            • 학교에서의 즐거운 경험<br>
-            • 가족과의 따뜻한 시간<br>
-            • 새로운 것을 배우는 기쁨<br>
-            • 도움을 주고받는 경험
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    **📚 이 도구는 초등학생의 건전한 감정 표현 학습을 위해 만들어졌습니다.**
+    
+    **🚫 다음과 같은 내용은 자동으로 차단됩니다:**
+    - 욕설, 폭언, 혐오 표현
+    - 폭력적이거나 위험한 내용  
+    - 부적절한 성적 표현
+    - 정치적 인물이나 논란적 내용
+    - 의미 없는 글자 나열
+    
+    **✅ 이런 건전한 내용을 사용해주세요:**
+    - 친구와의 우정 이야기
+    - 학교에서의 즐거운 경험
+    - 가족과의 따뜻한 시간
+    - 새로운 것을 배우는 기쁨
+    - 도움을 주고받는 경험
+    """)
+    
+    st.markdown("---")
     
     # 시작 안내 메시지
     st.markdown("""
@@ -371,7 +370,7 @@ if st.session_state.current_step == 1:
         st.info(f"{gender_emoji} {gender} 주인공으로 만화를 만들어요!")
     
     # 화풍 선택 추가
-    st.markdown("### 🎨 만화 화풍을 선택하세요")
+    st.markdown("### 🎨 만화/사진 스타일을 선택하세요")
     art_styles = {
         "귀여운 애니메이션": "🌟 지브리, 디즈니 같은 부드럽고 따뜻한 애니메이션 스타일",
         "한국 웹툰": "📱 네이버 웹툰 같은 깔끔하고 현대적인 한국 웹툰 스타일", 
@@ -379,7 +378,10 @@ if st.session_state.current_step == 1:
         "피규어 형태": "🧸 레고, 플레이모빌 같은 귀여운 피규어/장난감 스타일",
         "낙서 형태": "✏️ 공책에 그린 듯한 자유롭고 친근한 손그림 낙서 스타일",
         "수채화": "🖼️ 부드럽고 몽환적인 수채화 일러스트 스타일",
-        "동화책": "📚 따뜻하고 상상력 가득한 동화책 삽화 스타일"
+        "동화책": "📚 따뜻하고 상상력 가득한 동화책 삽화 스타일",
+        "실제 사진": "📸 실제 아이들이 연기하는 사진 스타일 (포토 드라마)",
+        "인형극": "🎪 인형이나 마네킹을 이용한 인형극 사진 스타일",
+        "클레이 모델": "🏺 찰흙이나 클레이로 만든 캐릭터 사진 스타일"
     }
     
     selected_style = st.radio("화풍 선택", list(art_styles.keys()), horizontal=False)
@@ -878,7 +880,10 @@ elif st.session_state.current_step == 5:
             "피규어 형태": "LEGO minifigure style, Playmobil toy style, cute figurine aesthetic", 
             "낙서 형태": "Hand-drawn doodle style, sketch-like, casual drawing, notebook doodle aesthetic",
             "수채화": "Watercolor illustration, soft brushstrokes, gentle colors, dreamy atmosphere",
-            "동화책": "Children's book illustration, storybook art style, warm and cozy"
+            "동화책": "Children's book illustration, storybook art style, warm and cozy",
+            "실제 사진": "Real photography, candid photo of children, natural lighting, documentary style",
+            "인형극": "Puppet show photography, marionette style, theatrical lighting, stage setting",
+            "클레이 모델": "Clay animation style, stop-motion photography, plasticine characters"
         }
         
         art_style_prompt = style_prompts.get(st.session_state.art_style, "cute anime/manga style")
