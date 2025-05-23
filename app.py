@@ -35,21 +35,44 @@ st.markdown("""
         background: #2c3e50 !important;
     }
     
-    .stButton > button, .stButton > button * {
+    /* 버튼 커서 문제 완전 해결 */
+    .stButton > button, 
+    .stButton > button *, 
+    button,
+    [data-testid="stButton"] > button,
+    [data-testid="stButton"] button {
         color: white !important;
         background: #3498db !important;
         cursor: pointer !important;
+        pointer-events: auto !important;
     }
     
-    .stButton > button:hover {
+    .stButton > button:hover, 
+    .stButton > button *:hover,
+    button:hover,
+    [data-testid="stButton"] > button:hover,
+    [data-testid="stButton"] button:hover {
         cursor: pointer !important;
-        background: #2980b9;
+        background: #2980b9 !important;
+        pointer-events: auto !important;
     }
     
-    .stButton > button:disabled {
+    .stButton > button:disabled, 
+    .stButton > button:disabled *,
+    button:disabled,
+    [data-testid="stButton"] > button:disabled,
+    [data-testid="stButton"] button:disabled {
         cursor: not-allowed !important;
-        background: #bdc3c7;
-        opacity: 0.6;
+        background: #bdc3c7 !important;
+        opacity: 0.6 !important;
+    }
+    
+    /* 모든 클릭 가능한 요소들 */
+    [role="button"],
+    .stRadio > div,
+    .stRadio label,
+    input[type="radio"] {
+        cursor: pointer !important;
     }
     
     .watermark {
@@ -605,37 +628,22 @@ elif st.session_state.current_step == 2:
             ai_response = ask_gemini(context_check_prompt)
             
             if ai_response and "부적절" in ai_response:
-                st.markdown('''
-                <div style="background: #ffebee; border: 2px solid #f44336; padding: 1.5rem; border-radius: 15px; margin: 1rem 0;">
-                    🚨 <strong style="color: #d32f2f; font-size: 1.2rem;">부적절한 내용이 감지되었습니다!</strong><br><br>
+                if has_inappropriate:
+                    st.error("🚨 부적절한 내용이 감지되었습니다!")
+                    st.warning("""
+                    **디지털 시민 교육**: 학교에서는 모든 친구들이 안전하고 편안하게 느낄 수 있는 내용만 사용해야 해요.
                     
-                    <div style="background: #ffcdd2; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                        📚 <strong>디지털 시민 교육:</strong><br>
-                        학교에서는 모든 친구들이 안전하고 편안하게 느낄 수 있는 내용만 사용해야 해요.<br>
-                        욕설, 폭력적 표현, 부적절한 내용은 다른 사람에게 상처를 줄 수 있습니다.
-                    </div>
-                    
-                    <strong style="color: #d32f2f;">✅ 이런 건전한 내용으로 바꿔주세요:</strong><br>
-                    • 친구와 사이좋게 놀이터에서 놀았을 때<br>
-                    • 선생님께 칭찬을 받아서 기뻤을 때<br>
-                    • 새로운 것을 배워서 뿌듯했을 때<br>
-                    • 친구에게 도움을 주거나 받았을 때<br>
-                    • 가족과 함께 즐거운 시간을 보냈을 때
-                    
-                    <div style="margin-top: 1rem; padding: 0.8rem; background: #e3f2fd; border-radius: 8px;">
-                        💡 <strong>팁:</strong> 학교생활에서 실제로 경험했던 긍정적이고 교육적인 상황을 써보세요!
-                    </div>
-                </div>
-                ''', unsafe_allow_html=True)
-                situation_valid = False
+                    **건전한 내용으로 바꿔주세요**:
+                    - 친구와 사이좋게 놀이터에서 놀았을 때
+                    - 선생님께 칭찬을 받아서 기뻤을 때  
+                    - 새로운 것을 배워서 뿌듯했을 때
+                    - 친구에게 도움을 주거나 받았을 때
+                    - 가족과 함께 즐거운 시간을 보냈을 때
+                    """)
+                    situation_valid = False
             elif ai_response and "적합" in ai_response:
                 if len(situation.strip()) >= 10:
-                    st.markdown('''
-                    <div style="background: #d4edda; border: 2px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                        ✅ <strong style="color: #155724;">훌륭한 상황 설명이에요!</strong><br>
-                        건전하고 교육적인 내용으로 멋진 만화를 만들 수 있을 거예요! 👍
-                    </div>
-                    ''', unsafe_allow_html=True)
+                    st.success("✅ 훌륭한 상황 설명이에요! 건전하고 교육적인 내용으로 멋진 만화를 만들 수 있을 거예요! 👍")
                     situation_valid = True
                 else:
                     situation_valid = False
@@ -645,25 +653,17 @@ elif st.session_state.current_step == 2:
                 has_inappropriate = any(word in situation.lower() for word in inappropriate_words)
                 
                 if has_inappropriate:
-                    st.markdown('''
-                    <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                        🚨 <strong>부적절한 표현이 포함되어 있어요!</strong>
-                    </div>
-                    ''', unsafe_allow_html=True)
+                    st.error("🚨 부적절한 표현이 포함되어 있어요!")
                     situation_valid = False
                 else:
                     situation_valid = len(situation.strip()) >= 10
         except:
             # AI 검증 실패 시 기본 키워드 체크
             inappropriate_words = ["시발", "병신", "김정은", "트럼프", "윤석열", "죽어", "꺼져"]
-            has_inappropriate = any(word in situation.lower() for word in quick_check_words)
+            has_inappropriate = any(word in situation.lower() for word in inappropriate_words)
             
             if has_inappropriate:
-                st.markdown('''
-                <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                    🚨 <strong>부적절한 표현이 포함되어 있어요!</strong>
-                </div>
-                ''', unsafe_allow_html=True)
+                st.error("🚨 부적절한 표현이 포함되어 있어요!")
                 situation_valid = False
             else:
                 situation_valid = len(situation.strip()) >= 10
