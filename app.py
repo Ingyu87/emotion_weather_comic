@@ -1113,21 +1113,32 @@ Safety requirements: Safe for children, educational content, wholesome, school-a
         
         st.markdown("**🎨 아래 프롬프트를 복사해서 AI 이미지 생성 사이트에 붙여넣으세요:**")
         
-        # 복사 기능이 있는 텍스트 영역
-        st.code(four_panel_prompt, language="text")
+        # 복사하기 쉬운 텍스트 영역으로 변경
+        st.text_area(
+            "4컷 만화 생성 프롬프트 (전체 선택 후 Ctrl+C로 복사하세요)", 
+            four_panel_prompt, 
+            height=200, 
+            key="four_panel_final",
+            help="이 텍스트를 전체 선택(Ctrl+A) 후 복사(Ctrl+C)해서 AI 이미지 생성 사이트에 붙여넣으세요!"
+        )
         
-        # 복사 버튼 추가
-        if st.button("📋 프롬프트 복사하기", key="copy_prompt"):
-            st.success("✅ 프롬프트가 복사되었습니다! AI 이미지 생성 사이트에 붙여넣어 주세요!")
+        # 복사 안내 메시지
+        st.info("💡 **복사 방법**: 위 텍스트 박스를 클릭 → 전체 선택(Ctrl+A) → 복사(Ctrl+C) → AI 사이트에 붙여넣기(Ctrl+V)")
         
-        # JavaScript로 실제 복사 기능 구현
-        st.markdown(f"""
-        <script>
-        function copyToClipboard() {{
-            navigator.clipboard.writeText(`{four_panel_prompt.replace('`', '\\`')}`);
-        }}
-        </script>
-        """, unsafe_allow_html=True)
+        # 추가 복사 옵션
+        with st.expander("📋 더 쉬운 복사를 위한 옵션"):
+            st.markdown("**방법 1**: 아래 코드 블록에서 오른쪽 상단 복사 버튼 클릭")
+            st.code(four_panel_prompt, language="text")
+            
+            st.markdown("**방법 2**: 한 줄씩 복사하기")
+            lines = four_panel_prompt.split('\n')
+            for i, line in enumerate(lines[:10]):  # 처음 10줄만 표시
+                if line.strip():
+                    st.text_input(f"라인 {i+1}", line, key=f"line_{i}")
+            
+            if len(lines) > 10:
+                st.write(f"... (총 {len(lines)}줄)")
+                st.text_area("전체 프롬프트", four_panel_prompt, height=150, key="full_prompt_backup")
         
         st.markdown("### 🌐 추천 이미지 생성 사이트")
         col1, col2, col3 = st.columns(3)
