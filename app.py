@@ -10,20 +10,43 @@ WEATHER_API_KEY = st.secrets.get("WEATHER_API_KEY")
 CITY = "Seoul"
 
 st.set_page_config(
-    page_title="AI 4컷 만화 생성기", 
-    page_icon="🎨", 
+    page_title="4컷 만화 스토리보드 생성기", 
+    page_icon="📋", 
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
 <style>
-    .stApp * {
+    /* 일반 텍스트는 검은색 */
+    .stApp, .stApp *, .stMarkdown, .stMarkdown * {
         color: #000000 !important;
     }
-    .stButton > button {
-        color: white !important;
+    
+    /* 코드 블록은 흰색 텍스트 + 어두운 배경 */
+    .stCode, .stCode *, code, pre {
+        color: #ffffff !important;
+        background: #2c3e50 !important;
     }
+    
+    /* 버튼은 흰색 텍스트 */
+    .stButton > button, .stButton > button * {
+        color: white !important;
+        background: #3498db !important;
+    }
+    
+    /* 워터마크 */
+    .watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        font-size: 10px;
+        color: #999999;
+        opacity: 0.6;
+        z-index: 9999;
+        pointer-events: none;
+    }
+    
     .stApp {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         font-family: 'Noto Sans KR', sans-serif;
@@ -228,8 +251,8 @@ if st.session_state.call_count >= 20:
 
 st.markdown('<div class="main-container">', unsafe_allow_html=True)
 
-st.markdown('<h1 class="main-title">🎨 AI 4컷 만화 생성기</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">감정과 상황을 바탕으로 나만의 특별한 4컷 만화를 만들어보세요!</p>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-title">📋 4컷 만화 스토리보드 생성기</h1>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">감정과 상황을 바탕으로 4컷 만화 스토리보드와 최적화된 이미지 프롬프트를 만들어보세요!</p>', unsafe_allow_html=True)
 
 render_step_indicator(st.session_state.current_step)
 
@@ -360,7 +383,7 @@ elif st.session_state.current_step == 4:
             st.rerun()
     
     with col3:
-        if st.button("🎨 만화 생성하기!"):
+        if st.button("🎨 스토리보드 생성하기!"):
             is_valid, message = validate_text_input(reason, min_length=5, max_length=150, field_name="감정의 이유")
             if is_valid:
                 st.session_state.reason = reason.strip()
@@ -373,7 +396,7 @@ elif st.session_state.current_step == 4:
 
 elif st.session_state.current_step == 5:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("🎬 당신만의 4컷 만화가 완성되었어요!")
+    st.subheader("📋 당신만의 4컷 만화 스토리보드가 완성되었어요!")
     
     with st.expander("📋 입력 정보 확인", expanded=False):
         st.write(f"**👤 나이대:** {st.session_state.age_group}")
@@ -385,7 +408,7 @@ elif st.session_state.current_step == 5:
     st.info(f"🌤️ **오늘의 서울 날씨:** {weather}")
     
     if not st.session_state.scenes:
-        with st.spinner("🎨 AI가 당신의 이야기를 4컷 만화로 만들고 있어요..."):
+        with st.spinner("📋 AI가 당신의 이야기를 4컷 만화 스토리보드로 만들고 있어요..."):
             summary_prompt = f"""
 나이대: {st.session_state.age_group}
 상황: {st.session_state.situation}
@@ -555,7 +578,7 @@ elif st.session_state.current_step == 5:
     with col3:
         if st.button("📤 공유하기"):
             st.balloons()
-            st.success("🎉 멋진 4컷 만화가 완성되었어요! 스크린샷으로 저장해서 친구들과 공유해보세요!")
+            st.success("🎉 멋진 4컷 만화 스토리보드가 완성되었어요! 프롬프트를 복사해서 AI 이미지 생성 사이트에서 만들어보세요!")
     
     if st.session_state.scenes and not hasattr(st.session_state, 'counted'):
         st.session_state.call_count += 1
@@ -577,10 +600,13 @@ elif st.session_state.current_step == 5:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
+# 워터마크 추가
+st.markdown('<div class="watermark">서울가동초 백인규</div>', unsafe_allow_html=True)
+
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #000000; padding: 1rem;'>"
-    "🎨 AI 4컷 만화 생성기 | 감정을 표현하고 창의성을 키워보세요!"
+    "📋 4컷 만화 스토리보드 생성기 | 감정을 표현하고 창의성을 키워보세요!"
     "</div>", 
     unsafe_allow_html=True
 )
