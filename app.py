@@ -564,7 +564,7 @@ elif st.session_state.current_step == 5:
                 # 각 장면별로 개별 프롬프트 생성
                 for i, scene in enumerate(st.session_state.scenes):
                     prompt_generation_request = f"""
-다음 정보로 단일 장면 이미지 생성용 영어 프롬프트를 만들어주세요:
+다음 정보로 K-6 학생용 안전한 단일 장면 이미지 생성용 영어 프롬프트를 만들어주세요:
 
 캐릭터 정보:
 - 나이대: {st.session_state.age_group}
@@ -573,14 +573,20 @@ elif st.session_state.current_step == 5:
 - 감정: {st.session_state.emotion}
 - 이 장면: {scene}
 
-요구사항:
+안전 요구사항 (반드시 준수):
+1. K-6 학생에게 적합한 건전한 내용만
+2. 폭력, 성적 내용, 위험한 행동 절대 금지
+3. 교육적이고 긍정적인 내용
+4. 학교 환경에 적합한 상황
+
+기술 요구사항:
 1. 단일 장면만 묘사 (4컷 중 {i+1}번째 컷)
-2. 동일한 캐릭터가 4개 프롬프트 모두에 등장해야 함
+2. 동일한 캐릭터가 4개 프롬프트 모두에 등장
 3. 일관된 화풍 유지 (cute anime/manga style)
 4. 영어로 작성
 5. 한국 초등학생 캐릭터
 
-프롬프트만 간결하게 출력해주세요:
+안전하고 교육적인 프롬프트만 간결하게 출력해주세요:
 """
                     
                     ai_prompt = ask_gemini(prompt_generation_request)
@@ -590,12 +596,12 @@ elif st.session_state.current_step == 5:
                         if ":" in clean_prompt:
                             clean_prompt = clean_prompt.split(":")[-1].strip()
                         
-                        # 캐릭터 일관성 보장
-                        consistent_prompt = f"Cute anime/manga style illustration of a {character_desc} ({age_desc}) showing {st.session_state.emotion} emotion. {clean_prompt}. Consistent character design, colorful, child-friendly art style."
-                        st.session_state.scene_prompts.append(consistent_prompt)
+                        # 캐릭터 일관성 + 안전성 보장
+                        safe_prompt = f"Safe for children, educational content. Cute anime/manga style illustration of a {character_desc} ({age_desc}) showing {st.session_state.emotion} emotion. {clean_prompt}. Wholesome, school-appropriate, consistent character design, colorful, child-friendly art style."
+                        st.session_state.scene_prompts.append(safe_prompt)
                     else:
-                        # 기본 프롬프트
-                        default_prompt = f"Cute anime/manga style illustration of a {character_desc} ({age_desc}) showing {st.session_state.emotion} emotion in this scene: {scene}. Consistent character design, colorful, child-friendly art style."
+                        # 안전한 기본 프롬프트
+                        default_prompt = f"Safe for children, educational content. Cute anime/manga style illustration of a {character_desc} ({age_desc}) showing {st.session_state.emotion} emotion in this scene: {scene}. Wholesome, school-appropriate, consistent character design, colorful, child-friendly art style."
                         st.session_state.scene_prompts.append(default_prompt)
         
         # 생성된 장면과 프롬프트 표시
@@ -686,17 +692,40 @@ elif st.session_state.current_step == 5:
         st.session_state.call_count += 1
         st.session_state.counted = True
         
-    # 전체 AI 생성 프롬프트 한번에 복사하기
+    # 전체 AI 생성 프롬프트 한번에 복사하기 + 4컷 만화 지시사항
     if st.session_state.scenes and st.session_state.scene_prompts:
         st.markdown("---")
         st.markdown("### 📋 AI 생성 프롬프트 전체 모음")
         
+        # 4컷 만화 생성용 통합 프롬프트
+        four_panel_prompt = f"""
+Create a 4-panel comic strip (네컷 만화) with consistent character design throughout all panels:
+
+Character: {character_desc} ({st.session_state.age_group})
+Story: {st.session_state.situation}
+Emotion: {st.session_state.emotion}
+
+Panel 1: {st.session_state.scene_prompts[0] if len(st.session_state.scene_prompts) > 0 else ""}
+
+Panel 2: {st.session_state.scene_prompts[1] if len(st.session_state.scene_prompts) > 1 else ""}
+
+Panel 3: {st.session_state.scene_prompts[2] if len(st.session_state.scene_prompts) > 2 else ""}
+
+Panel 4: {st.session_state.scene_prompts[3] if len(st.session_state.scene_prompts) > 3 else ""}
+
+Style: Cute anime/manga style, safe for children, educational content, wholesome, school-appropriate, consistent character design across all panels.
+"""
+        
+        st.markdown("**🎬 4컷 만화 통합 프롬프트 (한 번에 4컷 모두 생성):**")
+        st.text_area("4컷 만화 통합 프롬프트", four_panel_prompt, height=300, key="four_panel")
+        
+        # 개별 프롬프트도 제공
         all_ai_prompts = ""
         for i, (scene, prompt) in enumerate(zip(st.session_state.scenes, st.session_state.scene_prompts)):
             all_ai_prompts += f"컷 {i+1} - {scene}\n프롬프트: {prompt}\n\n"
         
-        st.markdown("**🤖 AI가 최적화한 모든 컷의 프롬프트:**")
-        st.text_area("전체 AI 프롬프트 (복사하세요)", all_ai_prompts, height=200)
+        st.markdown("**🎨 개별 컷 프롬프트 (하나씩 따로 생성):**")
+        st.text_area("개별 AI 프롬프트 모음", all_ai_prompts, height=200, key="individual")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
