@@ -554,49 +554,44 @@ elif st.session_state.current_step == 5:
             with st.spinner("🎨 각 장면별 최적화된 이미지 프롬프트를 생성하고 있어요..."):
                 
                 # 일관된 캐릭터 스타일 정의
-                character_style = f"{'boy' if st.session_state.gender == '남자' else 'girl'}"
-                age_descriptor = st.session_state.age_group.replace('학교', '').replace('~', '-')
+                character_desc = f"{'Korean elementary school boy' if st.session_state.gender == '남자' else 'Korean elementary school girl'}"
+                age_desc = st.session_state.age_group
                 
-                # 전체 4컷 만화를 위한 일관된 스타일 가이드
-                base_style_prompt = f"""
-4-panel comic style, consistent character design throughout all panels:
-- Character: {age_descriptor} Korean {character_style}
-- Art style: cute cartoon, anime/manga style, colorful, child-friendly
-- Consistent character appearance, clothing, and facial features across all panels
-- Clean lineart, bright colors, school setting
-- Same character design in every panel to maintain story continuity
-"""
-                
+                # 각 장면별로 개별 프롬프트 생성
                 for i, scene in enumerate(st.session_state.scenes):
                     prompt_generation_request = f"""
-다음 정보를 바탕으로 4컷 만화의 {i+1}번째 컷을 위한 영어 프롬프트를 만들어주세요:
+다음 정보로 단일 장면 이미지 생성용 영어 프롬프트를 만들어주세요:
 
-기본 캐릭터 정보:
-- 나이대: {st.session_state.age_group} 
+캐릭터 정보:
+- 나이대: {st.session_state.age_group}
 - 성별: {st.session_state.gender}
-- 전체 상황: {st.session_state.situation}
+- 상황: {st.session_state.situation}
 - 감정: {st.session_state.emotion}
-- 감정 이유: {st.session_state.reason}
-- 이 컷의 장면: {scene}
+- 이 장면: {scene}
 
-중요한 요구사항:
-1. 4컷 만화의 연속성을 위해 동일한 캐릭터가 등장해야 함
-2. 같은 화풍과 스타일 유지
-3. 영어로 작성
-4. 구체적이고 상세한 묘사
-5. 다음 기본 스타일을 포함: {base_style_prompt}
+요구사항:
+1. 단일 장면만 묘사 (4컷 중 {i+1}번째 컷)
+2. 동일한 캐릭터가 4개 프롬프트 모두에 등장해야 함
+3. 일관된 화풍 유지 (cute anime/manga style)
+4. 영어로 작성
+5. 한국 초등학생 캐릭터
 
-Panel {i+1} 프롬프트만 출력해주세요:
+프롬프트만 간결하게 출력해주세요:
 """
                     
                     ai_prompt = ask_gemini(prompt_generation_request)
                     if ai_prompt and "[오류]" not in ai_prompt:
-                        # 기본 스타일과 결합
-                        combined_prompt = f"{base_style_prompt}\n\nPanel {i+1}: {ai_prompt.strip()}"
-                        st.session_state.scene_prompts.append(combined_prompt)
+                        # 일관성을 위한 기본 설정 추가
+                        clean_prompt = ai_prompt.strip()
+                        if ":" in clean_prompt:
+                            clean_prompt = clean_prompt.split(":")[-1].strip()
+                        
+                        # 캐릭터 일관성 보장
+                        consistent_prompt = f"Cute anime/manga style illustration of a {character_desc} ({age_desc}) showing {st.session_state.emotion} emotion. {clean_prompt}. Consistent character design, colorful, child-friendly art style."
+                        st.session_state.scene_prompts.append(consistent_prompt)
                     else:
-                        # AI 생성 실패 시 기본 프롬프트 사용
-                        default_prompt = f"{base_style_prompt}\n\nPanel {i+1}: A {age_descriptor} Korean {character_style} showing {st.session_state.emotion} emotion in this scene: {scene}. Maintaining consistent character design from previous panels."
+                        # 기본 프롬프트
+                        default_prompt = f"Cute anime/manga style illustration of a {character_desc} ({age_desc}) showing {st.session_state.emotion} emotion in this scene: {scene}. Consistent character design, colorful, child-friendly art style."
                         st.session_state.scene_prompts.append(default_prompt)
         
         # 생성된 장면과 프롬프트 표시
