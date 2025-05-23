@@ -31,7 +31,7 @@ def generate_image(prompt):
         "Authorization": f"Bearer {DALL_E_API_KEY}",
         "Content-Type": "application/json"
     }
-    data = {"model": "dall-e-3", "prompt": prompt, "n": 1, "size": "512x512"}
+    data = {"model": "dall-e-3", "prompt": prompt, "n": 1, "size": "1024x1024"}
     response = requests.post(url, headers=headers, json=data)
     if response.status_code == 200:
         return response.json()["data"][0]["url"]
