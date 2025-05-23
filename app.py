@@ -280,11 +280,34 @@ with col2:
 
 if st.session_state.current_step == 1:
     st.markdown('<div class="card">', unsafe_allow_html=True)
+    
+    # 시작 안내 메시지
+    st.markdown("""
+    <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); border-radius: 15px; margin-bottom: 2rem;">
+        <h3 style="color: #1976d2; margin-bottom: 1rem;">🎨 감정 표현 4컷 만화 만들기</h3>
+        <p style="color: #424242; font-size: 1.1rem; margin-bottom: 0;">
+            📚 교육 목표: 자신의 감정을 인식하고 표현하는 능력 향상<br>
+            🎯 결과물: 4컷 만화 스토리보드 + AI 이미지 생성용 프롬프트
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     st.subheader("👤 사용자 나이대를 선택하세요")
     st.markdown("만화 스타일과 내용을 맞춤화하기 위해 나이대를 선택해주세요.")
     
     age_options = ["초등학교 1~2학년", "초등학교 3~4학년", "초등학교 5~6학년", "교사"]
     selected_age = st.radio("나이대 선택", age_options, horizontal=True)
+    
+    # 나이대별 특징 안내
+    age_descriptions = {
+        "초등학교 1~2학년": "🌟 간단하고 귀여운 스타일의 만화를 만들어요!",
+        "초등학교 3~4학년": "🎨 조금 더 자세하고 재미있는 스토리를 만들어요!",
+        "초등학교 5~6학년": "📖 감정 표현이 풍부하고 깊이 있는 만화를 만들어요!",
+        "교사": "🎓 교육용으로 활용할 수 있는 전문적인 스토리보드를 만들어요!"
+    }
+    
+    if selected_age:
+        st.info(f"✨ {age_descriptions[selected_age]}")
     
     col1, col2 = st.columns([3, 1])
     with col2:
@@ -298,6 +321,18 @@ if st.session_state.current_step == 1:
 elif st.session_state.current_step == 2:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("📝 어떤 상황인가요?")
+    
+    # 예시 상황들 제공
+    st.markdown("""
+    <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+        <strong>💡 예시 상황들:</strong><br>
+        • 친구와 놀다가 다쳤을 때<br>
+        • 시험에서 좋은 점수를 받았을 때<br>
+        • 새로운 친구를 만났을 때<br>
+        • 숙제를 깜빡했을 때
+    </div>
+    """, unsafe_allow_html=True)
+    
     st.markdown("오늘 있었던 일이나 기억에 남는 상황을 자세히 적어주세요.")
     
     situation = st.text_area(
