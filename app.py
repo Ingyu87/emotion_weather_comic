@@ -146,11 +146,84 @@ st.markdown("""
         border-radius: 3px;
         margin: 1rem 0;
     }
-    .progress-bar {
-        height: 100%;
-        background: #3498db;
-        border-radius: 3px;
-        transition: width 0.3s ease;
+    /* 화풍 선택 카드 스타일 */
+    .art-style-card {
+        background: white;
+        border: 3px solid #e8ecef;
+        border-radius: 15px;
+        padding: 1rem;
+        margin: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .art-style-card:hover {
+        border-color: #3498db;
+        background: #f8f9ff;
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+    }
+    
+    .art-style-card.selected {
+        border-color: #27ae60;
+        background: #e8f5e8;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(39, 174, 96, 0.3);
+    }
+    
+    .art-style-emoji {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .art-style-title {
+        font-weight: bold;
+        font-size: 1rem;
+        color: #2c3e50;
+        margin-bottom: 0.3rem;
+    }
+    
+    .art-style-desc {
+        font-size: 0.8rem;
+        color: #7f8c8d;
+        line-height: 1.3;
+    }
+    
+    /* 애니메이션 효과 */
+    @keyframes bounce {
+        0%, 20%, 60%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        80% { transform: translateY(-5px); }
+    }
+    
+    .bounce-animation {
+        animation: bounce 1s;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .pulse-animation {
+        animation: pulse 0.5s;
+    }
+    
+    /* 성공 메시지 애니메이션 */
+    @keyframes fadeInScale {
+        0% { opacity: 0; transform: scale(0.8); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+    
+    .success-animation {
+        animation: fadeInScale 0.5s ease-out;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -369,38 +442,86 @@ if st.session_state.current_step == 1:
     
     # 화풍 선택 추가
     st.markdown("### 🎨 만화/사진 스타일을 선택하세요")
+    st.markdown("원하는 스타일을 클릭해보세요! 각각 다른 느낌의 만화가 만들어져요.")
+    
     art_styles = {
-        "귀여운 애니메이션": "🌟 지브리, 디즈니 같은 부드럽고 따뜻한 애니메이션 스타일",
-        "한국 웹툰": "📱 네이버 웹툰 같은 깔끔하고 현대적인 한국 웹툰 스타일", 
-        "3D 캐릭터": "🎭 픽사, 토이스토리 같은 입체적이고 생동감 있는 3D 스타일",
-        "피규어 형태": "🧸 레고, 플레이모빌 같은 귀여운 피규어/장난감 스타일",
-        "낙서 형태": "✏️ 공책에 그린 듯한 자유롭고 친근한 손그림 낙서 스타일",
-        "수채화": "🖼️ 부드럽고 몽환적인 수채화 일러스트 스타일",
-        "동화책": "📚 따뜻하고 상상력 가득한 동화책 삽화 스타일",
-        "실제 사진": "📸 실제 아이들이 연기하는 사진 스타일 (포토 드라마)",
-        "인형극": "🎪 인형이나 마네킹을 이용한 인형극 사진 스타일",
-        "클레이 모델": "🏺 찰흙이나 클레이로 만든 캐릭터 사진 스타일"
+        "귀여운 애니메이션": {"emoji": "🌟", "desc": "지브리, 디즈니 같은 부드럽고 따뜻한 스타일"},
+        "한국 웹툰": {"emoji": "📱", "desc": "네이버 웹툰 같은 깔끔하고 현대적인 스타일"}, 
+        "3D 캐릭터": {"emoji": "🎭", "desc": "픽사, 토이스토리 같은 입체적이고 생동감 있는 스타일"},
+        "피규어 형태": {"emoji": "🧸", "desc": "레고, 플레이모빌 같은 귀여운 장난감 스타일"},
+        "낙서 형태": {"emoji": "✏️", "desc": "공책에 그린 듯한 자유롭고 친근한 손그림 스타일"},
+        "수채화": {"emoji": "🖼️", "desc": "부드럽고 몽환적인 수채화 일러스트 스타일"},
+        "동화책": {"emoji": "📚", "desc": "따뜻하고 상상력 가득한 동화책 삽화 스타일"},
+        "실제 사진": {"emoji": "📸", "desc": "실제 아이들이 연기하는 사진 스타일"},
+        "인형극": {"emoji": "🎪", "desc": "인형이나 마네킹을 이용한 인형극 사진 스타일"},
+        "클레이 모델": {"emoji": "🏺", "desc": "찰흙이나 클레이로 만든 캐릭터 사진 스타일"}
     }
     
-    selected_style = st.radio("화풍 선택", list(art_styles.keys()), horizontal=False)
+    # 3x4 그리드로 화풍 카드들 배치
+    col1, col2, col3 = st.columns(3)
     
+    style_names = list(art_styles.keys())
+    selected_style = st.session_state.get('art_style', None)
+    
+    for i, style_name in enumerate(style_names):
+        col_idx = i % 3
+        if col_idx == 0:
+            current_col = col1
+        elif col_idx == 1:
+            current_col = col2
+        else:
+            current_col = col3
+            
+        with current_col:
+            style_info = art_styles[style_name]
+            
+            # 선택된 스타일인지 확인
+            is_selected = selected_style == style_name
+            card_class = "selected" if is_selected else ""
+            
+            # 화풍 카드 HTML
+            card_html = f"""
+            <div class="art-style-card {card_class}" onclick="selectStyle('{style_name}')">
+                <span class="art-style-emoji">{style_info['emoji']}</span>
+                <div class="art-style-title">{style_name}</div>
+                <div class="art-style-desc">{style_info['desc']}</div>
+            </div>
+            """
+            
+            if st.button(f"{style_info['emoji']} {style_name}", key=f"style_{style_name}", use_container_width=True):
+                st.session_state.art_style = style_name
+                st.success(f"✨ {style_name} 스타일을 선택했어요!")
+                st.rerun()
+    
+    # 선택된 스타일 표시
     if selected_style:
-        st.info(f"🎨 {art_styles[selected_style]}")
+        st.markdown("---")
+        style_info = art_styles[selected_style]
+        st.markdown(f"""
+        <div class="success-animation" style="background: #e8f5e8; border: 2px solid #27ae60; padding: 1rem; border-radius: 15px; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">{style_info['emoji']}</div>
+            <div style="font-size: 1.2rem; font-weight: bold; color: #27ae60; margin-bottom: 0.5rem;">선택한 스타일: {selected_style}</div>
+            <div style="color: #2d5016;">{style_info['desc']}</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     col1, col2 = st.columns([3, 1])
     with col2:
-        if st.button("다음 단계 ➡️"):
-            if validate_age_group(selected_age) and gender and selected_style:
+        if st.button("다음 단계 ➡️", key="step1_next"):
+            if validate_age_group(selected_age) and gender and st.session_state.get('art_style'):
                 st.session_state.age_group = selected_age
                 st.session_state.gender = gender
-                st.session_state.art_style = selected_style
                 st.session_state.current_step = 2
+                # 성공 애니메이션 효과
+                st.balloons()
                 st.rerun()
             else:
+                missing = []
                 if not gender:
-                    st.error("성별을 선택해주세요!")
-                elif not selected_style:
-                    st.error("화풍을 선택해주세요!")
+                    missing.append("성별")
+                if not st.session_state.get('art_style'):
+                    missing.append("화풍")
+                st.error(f"{'과 '.join(missing)}을 선택해주세요!")
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif st.session_state.current_step == 2:
@@ -550,7 +671,7 @@ elif st.session_state.current_step == 2:
             st.rerun()
     
     with col3:
-        if st.button("다음 단계 ➡️", disabled=not situation_valid):
+        if st.button("다음 단계 ➡️", disabled=not situation_valid, key="step2_next"):
             if situation_valid:
                 # 최종 AI 검증 (더 정확한 검사)
                 is_valid, message = validate_text_input(situation, min_length=10, max_length=200, field_name="상황 설명")
@@ -558,6 +679,7 @@ elif st.session_state.current_step == 2:
                     st.session_state.situation = situation.strip()
                     st.session_state.emotion_options = fetch_emotions(st.session_state.situation)
                     st.session_state.current_step = 3
+                    st.balloons()
                     st.rerun()
                 else:
                     st.error(message)
@@ -575,18 +697,22 @@ elif st.session_state.current_step == 3:
     pos_cols = st.columns(5)
     for i, emotion in enumerate(st.session_state.emotion_options[0]):
         with pos_cols[i % 5]:
-            if st.button(f"😊 {emotion}", key=f"pos_{emotion}"):
+            if st.button(f"😊 {emotion}", key=f"pos_{emotion}", use_container_width=True):
                 st.session_state.emotion = emotion
                 st.session_state.current_step = 4
+                st.success(f"✨ '{emotion}' 감정을 선택했어요!")
+                time.sleep(0.5)  # 잠깐 보여주기
                 st.rerun()
     
     st.markdown("### 😔 부정적인 감정")
     neg_cols = st.columns(5)
     for i, emotion in enumerate(st.session_state.emotion_options[1]):
         with neg_cols[i % 5]:
-            if st.button(f"😔 {emotion}", key=f"neg_{emotion}"):
+            if st.button(f"😔 {emotion}", key=f"neg_{emotion}", use_container_width=True):
                 st.session_state.emotion = emotion
                 st.session_state.current_step = 4
+                st.success(f"✨ '{emotion}' 감정을 선택했어요!")
+                time.sleep(0.5)  # 잠깐 보여주기
                 st.rerun()
     
     # 감정 신호등 설명
@@ -701,12 +827,13 @@ elif st.session_state.current_step == 4:
             st.rerun()
     
     with col3:
-        if st.button("🎨 스토리보드 생성하기!", disabled=not reason_valid):
+        if st.button("🎨 스토리보드 생성하기!", disabled=not reason_valid, key="step4_final"):
             if reason_valid:
                 is_valid, message = validate_text_input(reason, min_length=5, max_length=150, field_name="감정의 이유")
                 if is_valid:
                     st.session_state.reason = reason.strip()
                     st.session_state.current_step = 5
+                    st.balloons()
                     st.rerun()
                 else:
                     st.error(message)
