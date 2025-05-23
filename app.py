@@ -6,8 +6,6 @@ from datetime import datetime
 import time
 
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
-WEATHER_API_KEY = st.secrets.get("WEATHER_API_KEY")
-CITY = "Seoul"
 
 st.set_page_config(
     page_title="4컷 만화 스토리보드 생성기", 
@@ -283,8 +281,8 @@ def render_progress_bar(progress):
 
 init_session_state()
 
-if st.session_state.call_count >= 20:
-    st.error("🚫 오늘은 20회까지만 생성할 수 있습니다. 내일 다시 이용해 주세요.")
+if st.session_state.call_count >= 100:
+    st.error("🚫 오늘은 100회까지만 생성할 수 있습니다. 내일 다시 이용해 주세요.")
     st.stop()
 
 st.markdown('<div class="main-container">', unsafe_allow_html=True)
@@ -303,8 +301,8 @@ with col2:
     current_date = datetime.now().strftime("%Y년 %m월 %d일")
     st.metric(
         label=f"🎯 오늘의 생성 횟수 ({current_date})", 
-        value=f"{st.session_state.call_count} / 20",
-        delta=f"{20 - st.session_state.call_count}회 남음"
+        value=f"{st.session_state.call_count} / 100",
+        delta=f"{100 - st.session_state.call_count}회 남음"
     )
 
 if st.session_state.current_step == 1:
@@ -591,6 +589,17 @@ elif st.session_state.current_step == 3:
                 st.session_state.current_step = 4
                 st.rerun()
     
+    # 감정 신호등 설명
+    st.markdown("---")
+    st.markdown("### 🚥 감정 신호등이란?")
+    st.markdown("""
+    **🟢 초록불 감정**: 건강하고 긍정적인 감정들 - 잘 표현하고 나누어보세요!
+    
+    **🟡 노란불 감정**: 주의가 필요한 복잡한 감정들 - 천천히 생각해보세요
+    
+    **🔴 빨간불 감정**: 힘들고 어려운 감정들 - 도움을 요청하는 것이 좋아요
+    """)
+    
     if st.button("⬅️ 이전"):
         st.session_state.current_step = 2
         st.rerun()
@@ -717,9 +726,20 @@ elif st.session_state.current_step == 5:
         st.write(f"**📝 상황:** {st.session_state.situation}")
         st.write(f"**😊 감정:** {st.session_state.emotion}")
         st.write(f"**💭 이유:** {st.session_state.reason}")
+        
+        # 감정 신호등 표시
+        if st.session_state.emotion:
+            traffic_light = get_emotion_traffic_light(st.session_state.emotion)
+            st.write(f"**🚥 감정 신호등:** {traffic_light['color']} {traffic_light['status']}")
     
-    weather = get_weather()
-    st.info(f"🌤️ **오늘의 서울 날씨:** {weather}")
+    # 감정 신호등 안내
+    traffic_light = get_emotion_traffic_light(st.session_state.emotion)
+    st.markdown(f"""
+    <div style="background: {traffic_light['css_color']}15; border: 2px solid {traffic_light['css_color']}; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+        <h4 style="color: {traffic_light['css_color']}; margin-bottom: 0.5rem;">🚥 감정 신호등 결과: {traffic_light['color']} {traffic_light['status']}</h4>
+        <p style="color: {traffic_light['css_color']}; margin-bottom: 0; font-weight: 500;">{traffic_light['message']}</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     if not st.session_state.scenes:
         with st.spinner("📋 AI가 당신의 이야기를 4컷 만화 스토리보드로 만들고 있어요..."):
