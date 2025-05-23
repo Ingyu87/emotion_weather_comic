@@ -173,6 +173,10 @@ def ask_gemini(prompt, model="models/gemini-1.5-pro-latest"):
 
 def generate_image(prompt):
     try:
+        if not DALL_E_API_KEY:
+            st.error("DALL-E API 키가 설정되지 않았습니다.")
+            return ""
+            
         url = "https://api.openai.com/v1/images/generations"
         headers = {
             "Authorization": f"Bearer {DALL_E_API_KEY}",
@@ -186,11 +190,28 @@ def generate_image(prompt):
             "response_format": "url"
         }
         
-        response = requests.post(url, headers=headers, json=data, timeout=60)
-        response.raise_for_status()
+        st.write(f"🔍 이미지 프롬프트: {prompt[:100]}...")  # 디버깅용
         
-        return response.json()["data"][0]["url"]
-    except:
+        response = requests.post(url, headers=headers, json=data, timeout=60)
+        
+        if response.status_code == 200:
+            result = response.json()
+            image_url = result["data"][0]["url"]
+            st.success(f"✅ 이미지 생성 성공!")
+            return image_url
+        else:
+            st.error(f"❌ API 오류: {response.status_code}")
+            st.error(f"오류 내용: {response.text}")
+            return ""
+            
+    except requests.exceptions.Timeout:
+        st.error("⏰ 이미지 생성 시간이 초과되었습니다.")
+        return ""
+    except requests.exceptions.RequestException as e:
+        st.error(f"🌐 네트워크 오류: {str(e)}")
+        return ""
+    except Exception as e:
+        st.error(f"🔧 예상치 못한 오류: {str(e)}")
         return ""
 
 def get_weather():
@@ -451,38 +472,61 @@ elif st.session_state.current_step == 5:
         
         for i, scene in enumerate(st.session_state.scenes):
             st.markdown(f"### 🎬 컷 {i+1}")
-            st.write(f"**장면:** {scene}")
+            st.write(f"**장면 설명:** {scene}")
             
-            if len(st.session_state.generated_images) <= i:
-                with st.spinner(f"컷 {i+1} 이미지를 생성하는 중..."):
-                    img_prompt = f"""
-Create a colorful, child-friendly cartoon illustration showing:
-- A {st.session_state.age_group} character 
-- Scene: {scene}
-- Emotion: {st.session_state.emotion}
-- Setting related to: {st.session_state.situation}
-- Art style: cute, colorful, manga/anime style, appropriate for children
-- No text in the image
-"""
-                    
-                    image_url = generate_image(img_prompt)
-                    if image_url:
-                        st.session_state.generated_images.append(image_url)
-                    else:
-                        st.session_state.generated_images.append("")
+            # 이미지 생성용 프롬프트 생성
+            img_prompt = f"""A cute cartoon illustration of a {st.session_state.age_group} child showing {st.session_state.emotion} emotion. Scene: {scene}. The child is experiencing: {st.session_state.situation}. Art style: colorful, child-friendly, anime/manga style, appropriate for children. No text in the image. High quality, detailed illustration."""
             
-            if len(st.session_state.generated_images) > i:
-                if st.session_state.generated_images[i]:
-                    st.image(st.session_state.generated_images[i], caption=f"컷 {i+1}: {scene}", use_column_width=True)
-                else:
-                    st.warning(f"⚠️ 컷 {i+1} 이미지 생성에 실패했습니다.")
-                    if st.button(f"🔄 컷 {i+1} 다시 생성", key=f"retry_{i}"):
-                        with st.spinner(f"컷 {i+1} 이미지를 다시 생성하는 중..."):
-                            img_prompt = f"Create a colorful, child-friendly cartoon illustration: Scene: {scene}, Character: {st.session_state.age_group}, Emotion: {st.session_state.emotion}, Style: cute anime/manga"
-                            new_image_url = generate_image(img_prompt)
-                            if new_image_url:
-                                st.session_state.generated_images[i] = new_image_url
-                                st.rerun()
+            # 프롬프트를 복사 가능한 형태로 표시
+            st.markdown("**🎨 이미지 생성 프롬프트 (복사해서 사용하세요):**")
+            st.code(img_prompt, language="text")
+            
+            # 추가 프롬프트 옵션들
+            with st.expander(f"컷 {i+1} 다른 스타일 프롬프트들", expanded=False):
+                # 미드저니 스타일 프롬프트
+                midjourney_prompt = f"{st.session_state.age_group} child, {st.session_state.emotion} emotion, {scene}, cute cartoon style, colorful, anime art, child-friendly --ar 1:1 --v 6"
+                st.markdown("**미드저니용:**")
+                st.code(midjourney_prompt, language="text")
+                
+                # 스테이블 디퓨전 스타일 프롬프트  
+                sd_prompt = f"((cute cartoon)), {st.session_state.age_group} child, {st.session_state.emotion} emotion, {scene}, anime style, colorful, high quality, detailed, child-friendly, no text"
+                st.markdown("**스테이블 디퓨전용:**")
+                st.code(sd_prompt, language="text")
+                
+                # 한국어 프롬프트 (한국 AI 서비스용)
+                korean_prompt = f"{st.session_state.age_group} 어린이가 {st.session_state.emotion} 감정을 느끼는 모습, {scene}, 귀여운 만화 스타일, 컬러풀한 그림, 아이들에게 적합한 일러스트"
+                st.markdown("**한국어 프롬프트 (국내 AI 서비스용):**")
+                st.code(korean_prompt, language="text")
+            
+            # 추천 이미지 생성 사이트들
+            if i == 0:  # 첫 번째 컷에만 표시
+                st.markdown("---")
+                st.markdown("### 🌐 추천 이미지 생성 사이트")
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.markdown("""
+                    **🎨 DALL-E 3**
+                    - [ChatGPT Plus](https://chat.openai.com)
+                    - [Bing Image Creator](https://www.bing.com/images/create)
+                    """)
+                
+                with col2:
+                    st.markdown("""
+                    **🎭 미드저니**
+                    - [Midjourney](https://www.midjourney.com)
+                    - 디스코드에서 사용
+                    """)
+                
+                with col3:
+                    st.markdown("""
+                    **🚀 기타 무료 사이트**
+                    - [Leonardo AI](https://leonardo.ai)
+                    - [PlaygroundAI](https://playgroundai.com)
+                    - [Ideogram](https://ideogram.ai)
+                    """)
+                
+                st.markdown("---")
             
             st.divider()
     else:
@@ -512,6 +556,19 @@ Create a colorful, child-friendly cartoon illustration showing:
     if st.session_state.scenes and not hasattr(st.session_state, 'counted'):
         st.session_state.call_count += 1
         st.session_state.counted = True
+        
+    # 전체 프롬프트 한번에 복사하기
+    if st.session_state.scenes:
+        st.markdown("---")
+        st.markdown("### 📋 전체 프롬프트 모음")
+        
+        all_prompts = ""
+        for i, scene in enumerate(st.session_state.scenes):
+            prompt = f"A cute cartoon illustration of a {st.session_state.age_group} child showing {st.session_state.emotion} emotion. Scene: {scene}. The child is experiencing: {st.session_state.situation}. Art style: colorful, child-friendly, anime/manga style, appropriate for children. No text in the image. High quality, detailed illustration."
+            all_prompts += f"컷 {i+1}: {prompt}\n\n"
+        
+        st.markdown("**모든 컷의 프롬프트:**")
+        st.text_area("전체 프롬프트 (복사하세요)", all_prompts, height=200)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
