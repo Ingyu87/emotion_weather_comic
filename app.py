@@ -622,7 +622,8 @@ elif st.session_state.current_step == 2:
 - "시험을 망쳤어" → 적합 (학교 상황 표현)
 - "선생님이 미쳤다고 했어" → 부적절 (부적절한 표현)
 
-문맥상 의미를 종합적으로 고려하여 "적합" 또는 "부적절" 중 하나로만 답변하세요:
+문맥상 의미를 종합적으로 고려하여 "적합" 또는 "부적절" 중 하나로만 답변하세요.
+특히 욕설의 변형이나 은어, 부적절한 표현이 숨어있는지 주의깊게 살펴보세요:
 """
             
             ai_response = ask_gemini(context_check_prompt)
@@ -648,9 +649,13 @@ elif st.session_state.current_step == 2:
                 else:
                     situation_valid = False
             else:
-                # AI 응답이 애매하면 기본 키워드로 한번 더 체크
-                inappropriate_words = ["시발", "병신", "김정은", "트럼프", "윤석열", "죽어", "꺼져"]
-                has_inappropriate = any(word in situation.lower() for word in inappropriate_words)
+                # AI 응답이 애매하면 기본 키워드로 한번 더 체크 (더 강화된 키워드 리스트)
+                inappropriate_words = [
+                    "시발", "병신", "김정은", "트럼프", "윤석열", "죽어", "꺼져", "좆", "씨발", "개새끼",
+                    "바보", "멍청", "미친", "년", "새끼", "개새", "처먹", "좋이나", "쳐먹", "개소리",
+                    "좋아", "좋이", "처", "먹", "쳐", "개", "병", "신", "미", "친"
+                ]
+                has_inappropriate = any(word in situation.lower().replace(" ", "") for word in inappropriate_words)
                 
                 if has_inappropriate:
                     st.error("🚨 부적절한 표현이 포함되어 있어요!")
@@ -658,9 +663,13 @@ elif st.session_state.current_step == 2:
                 else:
                     situation_valid = len(situation.strip()) >= 10
         except:
-            # AI 검증 실패 시 기본 키워드 체크
-            inappropriate_words = ["시발", "병신", "김정은", "트럼프", "윤석열", "죽어", "꺼져"]
-            has_inappropriate = any(word in situation.lower() for word in inappropriate_words)
+            # AI 검증 실패 시 기본 키워드 체크 (더 강화된 키워드 리스트)
+            inappropriate_words = [
+                "시발", "병신", "김정은", "트럼프", "윤석열", "죽어", "꺼져", "좆", "씨발", "개새끼",
+                "바보", "멍청", "미친", "년", "새끼", "개새", "처먹", "좋이나", "쳐먹", "개소리",
+                "좋아", "좋이", "처", "먹", "쳐", "개", "병", "신", "미", "친"
+            ]
+            has_inappropriate = any(word in situation.lower().replace(" ", "") for word in inappropriate_words)
             
             if has_inappropriate:
                 st.error("🚨 부적절한 표현이 포함되어 있어요!")
