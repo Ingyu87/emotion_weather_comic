@@ -409,18 +409,60 @@ elif st.session_state.current_step == 2:
     situation = st.text_area(
         "상황 설명",
         placeholder=f"예: {situations[0]}",
-        height=100
+        height=100,
+        key="situation_input"
     )
     
     char_count = len(situation) if situation else 0
     st.caption(f"글자 수: {char_count}/200")
     
-    if situation:
-        is_valid, message = validate_text_input(situation, min_length=10, max_length=200, field_name="상황 설명")
-        if not is_valid:
-            st.markdown(f'<div class="warning-box">⚠️ {message}</div>', unsafe_allow_html=True)
+    # 실시간 입력 검증
+    if situation and len(situation.strip()) >= 5:
+        # 간단한 키워드 기반 실시간 검증 (빠른 응답을 위해)
+        quick_check_words = [
+            "바보", "멍청", "죽어", "꺼져", "시발", "병신", "미친",
+            "김정은", "트럼프", "윤석열", "때리", "싸우", "폭력",
+            "비키니", "키스", "섹시", "담배", "술", "마약"
+        ]
+        
+        has_inappropriate = False
+        found_word = ""
+        for word in quick_check_words:
+            if word in situation.lower():
+                has_inappropriate = True
+                found_word = word
+                break
+        
+        if has_inappropriate:
+            st.markdown(f'''
+            <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                🚨 <strong>'{found_word}' 같은 표현은 사용할 수 없어요!</strong><br><br>
+                📚 <strong>디지털 시민 교육:</strong> 학교에서는 모든 친구들이 안전하고 편안하게 느낄 수 있는 말을 사용해야 해요.<br><br>
+                ✨ <strong>건전한 내용으로 바꿔주세요:</strong><br>
+                • 친구와 사이좋게 놀이터에서 놀았을 때<br>
+                • 선생님께 칭찬을 받아서 기뻤을 때<br>
+                • 새로운 것을 배워서 뿌듯했을 때
+            </div>
+            ''', unsafe_allow_html=True)
+            
+            # 부적절한 내용이 있으면 버튼 비활성화
+            situation_valid = False
         else:
-            st.markdown('<div class="success-box">✅ 좋은 상황 설명이에요!</div>', unsafe_allow_html=True)
+            # 무의미한 입력 체크 (간단한 패턴)
+            if len(set(situation.replace(" ", ""))) < 3:  # 문자 종류가 3개 미만
+                st.markdown('''
+                <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                    ⚠️ <strong>의미있는 문장을 작성해주세요!</strong><br><br>
+                    같은 글자를 반복하거나 무의미한 입력은 사용할 수 없어요.<br>
+                    학교생활에서 실제로 경험한 상황을 적어주세요.
+                </div>
+                ''', unsafe_allow_html=True)
+                situation_valid = False
+            else:
+                st.markdown('<div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">✅ 좋은 상황 설명이에요!</div>', unsafe_allow_html=True)
+                situation_valid = True
+    else:
+        situation_valid = len(situation.strip()) >= 10 if situation else False
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col1:
@@ -429,15 +471,19 @@ elif st.session_state.current_step == 2:
             st.rerun()
     
     with col3:
-        if st.button("다음 단계 ➡️"):
-            is_valid, message = validate_text_input(situation, min_length=10, max_length=200, field_name="상황 설명")
-            if is_valid:
-                st.session_state.situation = situation.strip()
-                st.session_state.emotion_options = fetch_emotions(st.session_state.situation)
-                st.session_state.current_step = 3
-                st.rerun()
+        if st.button("다음 단계 ➡️", disabled=not situation_valid):
+            if situation_valid:
+                # 최종 AI 검증 (더 정확한 검사)
+                is_valid, message = validate_text_input(situation, min_length=10, max_length=200, field_name="상황 설명")
+                if is_valid:
+                    st.session_state.situation = situation.strip()
+                    st.session_state.emotion_options = fetch_emotions(st.session_state.situation)
+                    st.session_state.current_step = 3
+                    st.rerun()
+                else:
+                    st.error(message)
             else:
-                st.error(message)
+                st.error("적절한 상황을 입력해주세요!")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -478,18 +524,50 @@ elif st.session_state.current_step == 4:
     reason = st.text_area(
         "감정의 이유",
         placeholder=f"예: {st.session_state.emotion}을 느낀 이유는...",
-        height=100
+        height=100,
+        key="reason_input"
     )
     
     char_count = len(reason) if reason else 0
     st.caption(f"글자 수: {char_count}/150")
     
-    if reason:
-        is_valid, message = validate_text_input(reason, min_length=5, max_length=150, field_name="감정의 이유")
-        if not is_valid:
-            st.markdown(f'<div class="warning-box">⚠️ {message}</div>', unsafe_allow_html=True)
+    # 실시간 입력 검증 (이유 입력)
+    if reason and len(reason.strip()) >= 3:
+        quick_check_words = [
+            "바보", "멍청", "죽어", "꺼져", "시발", "병신", "미친",
+            "김정은", "트럼프", "윤석열", "때리", "싸우", "폭력",
+            "비키니", "키스", "섹시", "담배", "술", "마약"
+        ]
+        
+        has_inappropriate = False
+        found_word = ""
+        for word in quick_check_words:
+            if word in reason.lower():
+                has_inappropriate = True
+                found_word = word
+                break
+        
+        if has_inappropriate:
+            st.markdown(f'''
+            <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                🚨 <strong>'{found_word}' 같은 표현은 사용할 수 없어요!</strong><br><br>
+                ✨ 감정의 이유를 건전하고 교육적으로 표현해주세요.
+            </div>
+            ''', unsafe_allow_html=True)
+            reason_valid = False
         else:
-            st.markdown('<div class="success-box">✅ 감정을 잘 표현해주셨어요!</div>', unsafe_allow_html=True)
+            if len(set(reason.replace(" ", ""))) < 3:
+                st.markdown('''
+                <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
+                    ⚠️ <strong>의미있는 문장을 작성해주세요!</strong>
+                </div>
+                ''', unsafe_allow_html=True)
+                reason_valid = False
+            else:
+                st.markdown('<div style="background: #d4edda; border: 1px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">✅ 감정을 잘 표현해주셨어요!</div>', unsafe_allow_html=True)
+                reason_valid = True
+    else:
+        reason_valid = len(reason.strip()) >= 5 if reason else False
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col1:
@@ -498,14 +576,17 @@ elif st.session_state.current_step == 4:
             st.rerun()
     
     with col3:
-        if st.button("🎨 스토리보드 생성하기!"):
-            is_valid, message = validate_text_input(reason, min_length=5, max_length=150, field_name="감정의 이유")
-            if is_valid:
-                st.session_state.reason = reason.strip()
-                st.session_state.current_step = 5
-                st.rerun()
+        if st.button("🎨 스토리보드 생성하기!", disabled=not reason_valid):
+            if reason_valid:
+                is_valid, message = validate_text_input(reason, min_length=5, max_length=150, field_name="감정의 이유")
+                if is_valid:
+                    st.session_state.reason = reason.strip()
+                    st.session_state.current_step = 5
+                    st.rerun()
+                else:
+                    st.error(message)
             else:
-                st.error(message)
+                st.error("적절한 이유를 입력해주세요!")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -628,63 +709,9 @@ elif st.session_state.current_step == 5:
                         st.session_state.scene_prompts.append(default_prompt)
         
         # 생성된 장면과 프롬프트 표시
-        for i, (scene, prompt) in enumerate(zip(st.session_state.scenes, st.session_state.scene_prompts)):
+        for i, scene in enumerate(st.session_state.scenes):
             st.markdown(f"### 🎬 컷 {i+1}")
             st.write(f"**장면 설명:** {scene}")
-            
-            # AI가 생성한 최적화된 프롬프트 표시
-            st.markdown("**🤖 AI 생성 최적화 프롬프트:**")
-            st.code(prompt, language="text")
-            
-            # 추가 프롬프트 옵션들
-            with st.expander(f"컷 {i+1} 다른 스타일 프롬프트들", expanded=False):
-                # 미드저니 스타일 프롬프트
-                midjourney_prompt = f"{prompt} --ar 1:1 --v 6 --style cute"
-                st.markdown("**미드저니용 (AI 최적화):**")
-                st.code(midjourney_prompt, language="text")
-                
-                # 스테이블 디퓨전 스타일 프롬프트  
-                sd_prompt = f"((cute cartoon)), {prompt}, anime style, colorful, high quality, detailed, child-friendly, no text"
-                st.markdown("**스테이블 디퓨전용 (AI 최적화):**")
-                st.code(sd_prompt, language="text")
-                
-                # 한국어 번역 프롬프트
-                korean_translation_request = f"다음 영어 프롬프트를 한국어로 자연스럽게 번역해주세요: {prompt}"
-                korean_prompt = ask_gemini(korean_translation_request)
-                if korean_prompt and "[오류]" not in korean_prompt:
-                    st.markdown("**한국어 프롬프트 (AI 번역):**")
-                    st.code(korean_prompt.strip(), language="text")
-            
-            # 추천 이미지 생성 사이트들 (첫 번째 컷에만 표시)
-            if i == 0:
-                st.markdown("---")
-                st.markdown("### 🌐 추천 이미지 생성 사이트")
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    st.markdown("""
-                    **🎨 DALL-E 3**
-                    - [ChatGPT Plus](https://chat.openai.com)
-                    - [Bing Image Creator](https://www.bing.com/images/create)
-                    """)
-                
-                with col2:
-                    st.markdown("""
-                    **🎭 미드저니**
-                    - [Midjourney](https://www.midjourney.com)
-                    - 디스코드에서 사용
-                    """)
-                
-                with col3:
-                    st.markdown("""
-                    **🚀 기타 무료 사이트**
-                    - [Leonardo AI](https://leonardo.ai)
-                    - [PlaygroundAI](https://playgroundai.com)
-                    - [Ideogram](https://ideogram.ai)
-                    """)
-                
-                st.info("💡 **팁**: AI가 생성한 최적화 프롬프트를 사용하면 더 좋은 결과를 얻을 수 있어요!")
-                st.markdown("---")
             
             st.divider()
     else:
@@ -715,40 +742,58 @@ elif st.session_state.current_step == 5:
         st.session_state.call_count += 1
         st.session_state.counted = True
         
-    # 전체 AI 생성 프롬프트 한번에 복사하기 + 4컷 만화 지시사항
+    # 4컷 만화 통합 프롬프트만 제공
     if st.session_state.scenes and st.session_state.scene_prompts:
         st.markdown("---")
-        st.markdown("### 📋 AI 생성 프롬프트 전체 모음")
+        st.markdown("### 🎬 4컷 만화 생성 프롬프트")
         
         # 4컷 만화 생성용 통합 프롬프트
-        four_panel_prompt = f"""
-Create a 4-panel comic strip (네컷 만화) with consistent character design throughout all panels:
+        character_desc = f"{'Korean elementary school boy' if st.session_state.gender == '남자' else 'Korean elementary school girl'}"
+        
+        four_panel_prompt = f"""Create a 4-panel comic strip (네컷 만화) with consistent character design throughout all panels:
 
 Character: {character_desc} ({st.session_state.age_group})
-Story: {st.session_state.situation}
-Emotion: {st.session_state.emotion}
+Story theme: {st.session_state.situation}
+Main emotion: {st.session_state.emotion}
+Reason for emotion: {st.session_state.reason}
 
-Panel 1: {st.session_state.scene_prompts[0] if len(st.session_state.scene_prompts) > 0 else ""}
+Panel 1: {st.session_state.scenes[0] if len(st.session_state.scenes) > 0 else ""}
+Panel 2: {st.session_state.scenes[1] if len(st.session_state.scenes) > 1 else ""}
+Panel 3: {st.session_state.scenes[2] if len(st.session_state.scenes) > 2 else ""}
+Panel 4: {st.session_state.scenes[3] if len(st.session_state.scenes) > 3 else ""}
 
-Panel 2: {st.session_state.scene_prompts[1] if len(st.session_state.scene_prompts) > 1 else ""}
-
-Panel 3: {st.session_state.scene_prompts[2] if len(st.session_state.scene_prompts) > 2 else ""}
-
-Panel 4: {st.session_state.scene_prompts[3] if len(st.session_state.scene_prompts) > 3 else ""}
-
-Style: Cute anime/manga style, safe for children, educational content, wholesome, school-appropriate, consistent character design across all panels.
-"""
+Art style: Cute anime/manga style, safe for children, educational content, wholesome, school-appropriate, consistent character design across all panels, colorful, child-friendly."""
         
-        st.markdown("**🎬 4컷 만화 통합 프롬프트 (한 번에 4컷 모두 생성):**")
-        st.text_area("4컷 만화 통합 프롬프트", four_panel_prompt, height=300, key="four_panel")
+        st.markdown("**🎨 아래 프롬프트를 복사해서 AI 이미지 생성 사이트에 붙여넣으세요:**")
+        st.text_area("4컷 만화 생성 프롬프트", four_panel_prompt, height=250, key="four_panel_final")
         
-        # 개별 프롬프트도 제공
-        all_ai_prompts = ""
-        for i, (scene, prompt) in enumerate(zip(st.session_state.scenes, st.session_state.scene_prompts)):
-            all_ai_prompts += f"컷 {i+1} - {scene}\n프롬프트: {prompt}\n\n"
+        # 추천 이미지 생성 사이트들
+        st.markdown("### 🌐 추천 이미지 생성 사이트")
+        col1, col2, col3 = st.columns(3)
         
-        st.markdown("**🎨 개별 컷 프롬프트 (하나씩 따로 생성):**")
-        st.text_area("개별 AI 프롬프트 모음", all_ai_prompts, height=200, key="individual")
+        with col1:
+            st.markdown("""
+            **🎨 DALL-E 3**
+            - [ChatGPT Plus](https://chat.openai.com)
+            - [Bing Image Creator](https://www.bing.com/images/create)
+            """)
+        
+        with col2:
+            st.markdown("""
+            **🎭 미드저니**
+            - [Midjourney](https://www.midjourney.com)
+            - 디스코드에서 사용
+            """)
+        
+        with col3:
+            st.markdown("""
+            **🚀 기타 무료 사이트**
+            - [Leonardo AI](https://leonardo.ai)
+            - [PlaygroundAI](https://playgroundai.com)
+            - [Ideogram](https://ideogram.ai)
+            """)
+        
+        st.info("💡 **사용법**: 위 프롬프트를 복사해서 원하는 AI 이미지 생성 사이트에 붙여넣으면 4컷 만화가 한번에 생성됩니다!")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
