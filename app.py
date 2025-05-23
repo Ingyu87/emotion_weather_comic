@@ -166,6 +166,7 @@ def init_session_state():
         "call_count": 0,
         "current_step": 1,
         "age_group": None,
+        "gender": None,
         "situation": None,
         "emotion": None,
         "reason": None,
@@ -309,13 +310,25 @@ if st.session_state.current_step == 1:
     if selected_age:
         st.info(f"✨ {age_descriptions[selected_age]}")
     
+    # 성별 선택 추가
+    st.markdown("### 👦👧 주인공 성별을 선택하세요")
+    gender = st.radio("성별 선택", ["남자", "여자"], horizontal=True)
+    
+    if gender:
+        gender_emoji = "👦" if gender == "남자" else "👧"
+        st.info(f"{gender_emoji} {gender} 주인공으로 만화를 만들어요!")
+    
     col1, col2 = st.columns([3, 1])
     with col2:
         if st.button("다음 단계 ➡️"):
-            if validate_age_group(selected_age):
+            if validate_age_group(selected_age) and gender:
                 st.session_state.age_group = selected_age
+                st.session_state.gender = gender
                 st.session_state.current_step = 2
                 st.rerun()
+            else:
+                if not gender:
+                    st.error("성별을 선택해주세요!")
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif st.session_state.current_step == 2:
@@ -475,6 +488,7 @@ elif st.session_state.current_step == 5:
     
     with st.expander("📋 입력 정보 확인", expanded=False):
         st.write(f"**👤 나이대:** {st.session_state.age_group}")
+        st.write(f"**👦👧 성별:** {st.session_state.gender}")
         st.write(f"**📝 상황:** {st.session_state.situation}")
         st.write(f"**😊 감정:** {st.session_state.emotion}")
         st.write(f"**💭 이유:** {st.session_state.reason}")
@@ -538,37 +552,51 @@ elif st.session_state.current_step == 5:
         # 프롬프트가 아직 생성되지 않았다면 생성
         if not st.session_state.scene_prompts:
             with st.spinner("🎨 각 장면별 최적화된 이미지 프롬프트를 생성하고 있어요..."):
+                
+                # 일관된 캐릭터 스타일 정의
+                character_style = f"{'boy' if st.session_state.gender == '남자' else 'girl'}"
+                age_descriptor = st.session_state.age_group.replace('학교', '').replace('~', '-')
+                
+                # 전체 4컷 만화를 위한 일관된 스타일 가이드
+                base_style_prompt = f"""
+4-panel comic style, consistent character design throughout all panels:
+- Character: {age_descriptor} Korean {character_style}
+- Art style: cute cartoon, anime/manga style, colorful, child-friendly
+- Consistent character appearance, clothing, and facial features across all panels
+- Clean lineart, bright colors, school setting
+- Same character design in every panel to maintain story continuity
+"""
+                
                 for i, scene in enumerate(st.session_state.scenes):
                     prompt_generation_request = f"""
-다음 정보를 바탕으로 AI 이미지 생성을 위한 최적화된 영어 프롬프트를 만들어주세요:
+다음 정보를 바탕으로 4컷 만화의 {i+1}번째 컷을 위한 영어 프롬프트를 만들어주세요:
 
-- 나이대: {st.session_state.age_group}
+기본 캐릭터 정보:
+- 나이대: {st.session_state.age_group} 
+- 성별: {st.session_state.gender}
 - 전체 상황: {st.session_state.situation}
 - 감정: {st.session_state.emotion}
 - 감정 이유: {st.session_state.reason}
 - 이 컷의 장면: {scene}
 
-요구사항:
-1. 영어로 작성
-2. DALL-E, 미드저니 등에서 잘 작동하는 프롬프트
-3. 어린이에게 적합한 귀여운 만화 스타일
+중요한 요구사항:
+1. 4컷 만화의 연속성을 위해 동일한 캐릭터가 등장해야 함
+2. 같은 화풍과 스타일 유지
+3. 영어로 작성
 4. 구체적이고 상세한 묘사
-5. 한 줄로 작성 (개행 없이)
+5. 다음 기본 스타일을 포함: {base_style_prompt}
 
-프롬프트만 출력해주세요:
+Panel {i+1} 프롬프트만 출력해주세요:
 """
                     
                     ai_prompt = ask_gemini(prompt_generation_request)
                     if ai_prompt and "[오류]" not in ai_prompt:
-                        # 불필요한 텍스트 제거하고 프롬프트만 추출
-                        clean_prompt = ai_prompt.strip()
-                        # 만약 "프롬프트:" 같은 접두사가 있다면 제거
-                        if ":" in clean_prompt and len(clean_prompt.split(":")) > 1:
-                            clean_prompt = clean_prompt.split(":")[-1].strip()
-                        st.session_state.scene_prompts.append(clean_prompt)
+                        # 기본 스타일과 결합
+                        combined_prompt = f"{base_style_prompt}\n\nPanel {i+1}: {ai_prompt.strip()}"
+                        st.session_state.scene_prompts.append(combined_prompt)
                     else:
                         # AI 생성 실패 시 기본 프롬프트 사용
-                        default_prompt = f"A cute cartoon illustration of a {st.session_state.age_group} child showing {st.session_state.emotion} emotion. Scene: {scene}. Colorful, child-friendly, anime style, high quality illustration."
+                        default_prompt = f"{base_style_prompt}\n\nPanel {i+1}: A {age_descriptor} Korean {character_style} showing {st.session_state.emotion} emotion in this scene: {scene}. Maintaining consistent character design from previous panels."
                         st.session_state.scene_prompts.append(default_prompt)
         
         # 생성된 장면과 프롬프트 표시
@@ -638,7 +666,7 @@ elif st.session_state.current_step == 5:
     
     with col1:
         if st.button("🔄 다시 만들기"):
-            keys_to_reset = ["age_group", "situation", "emotion", "reason", "scenes", "scene_prompts", "emotion_options", "counted"]
+            keys_to_reset = ["age_group", "gender", "situation", "emotion", "reason", "scenes", "scene_prompts", "emotion_options", "counted"]
             for key in keys_to_reset:
                 if key in st.session_state:
                     del st.session_state[key]
