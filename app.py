@@ -23,6 +23,15 @@ st.markdown("""
         color: #000000 !important;
     }
     
+    /* 입력 필드들은 검은 배경에 흰색 텍스트 */
+    .stTextInput > div > div > input, 
+    .stTextArea > div > div > textarea,
+    .stTextInput input,
+    .stTextArea textarea {
+        color: #ffffff !important;
+        background-color: #2c3e50 !important;
+    }
+    
     /* 코드 블록은 흰색 텍스트 + 어두운 배경 */
     .stCode, .stCode *, code, pre {
         color: #ffffff !important;
