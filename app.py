@@ -766,8 +766,6 @@ if st.session_state.current_step == 1:
                 if not st.session_state.get('art_style'):
                     missing.append("화풍")
                 st.error(f"{'과 '.join(missing)}을 선택해주세요!")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
 
 elif st.session_state.current_step == 2:
     st.markdown('<div class="card">', unsafe_allow_html=True)
