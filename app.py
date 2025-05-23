@@ -1,13 +1,10 @@
 import streamlit as st
 import requests
 import json
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-DALL_E_API_KEY = os.getenv("DALL_E_API_KEY") or os.getenv("OPENAI_API_KEY")  # 팀 계정 백업 사용
+GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
+WEATHER_API_KEY = st.secrets.get("WEATHER_API_KEY")
+DALL_E_API_KEY = st.secrets.get("DALL_E_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 CITY = "Seoul"
 
 if "call_count" not in st.session_state:
@@ -39,6 +36,7 @@ def generate_image(prompt):
     if response.status_code == 200:
         return response.json()["data"][0]["url"]
     else:
+        st.warning(f"이미지 생성 오류: {response.status_code} - {response.text}")
         return ""
 
 def get_weather():
