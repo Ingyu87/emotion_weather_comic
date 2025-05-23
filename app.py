@@ -83,6 +83,7 @@ def get_weather():
 # -------------------------------
 # Streamlit UI
 # -------------------------------
+st.set_page_config(layout="wide")
 st.sidebar.title("📊 사용량")
 st.sidebar.metric(label="오늘의 생성 횟수", value=f"{st.session_state.call_count} / 20")
 
@@ -96,23 +97,25 @@ if "reason" not in st.session_state:
 # Step 1: 감정 선택
 if not st.session_state.emotion:
     st.subheader("1️⃣ 오늘 당신의 감정을 선택하세요")
-    raw_emotions = ask_gemini("오늘의 감정을 나타내는 단어 5개만 제시해줘.")
-    emotions = [e.strip("- ") for e in raw_emotions.split("\n") if e.strip()]
-    selected_emotion = st.radio("감정을 선택하세요:", emotions)
-    if st.button("확정하기", key="select_emotion"):
-        st.session_state.emotion = selected_emotion
-        st.rerun()
+    raw_emotions = ask_gemini("초등학생이 느낄 수 있는 감정 20가지를 한 줄로 쉼표로 구분해서 나열해줘.")
+    emotions = [e.strip() for e in raw_emotions.split(",") if e.strip()]
+    cols = st.columns(5)
+    for i, emo in enumerate(emotions):
+        if cols[i % 5].button(emo):
+            st.session_state.emotion = emo
+            st.rerun()
 
 # Step 2: 이유 선택
 elif not st.session_state.reason:
     st.subheader(f"2️⃣ '{st.session_state.emotion}' 감정의 이유를 선택하세요")
-    prompt = f"'{st.session_state.emotion}'이라는 감정을 느끼는 이유 5개만 제시해줘."
+    prompt = f"초등학생이 '{st.session_state.emotion}'이라는 감정을 느낄 수 있는 구체적인 이유를 8가지 나열해줘. 한 줄로 쉼표로 구분해서."
     raw_reasons = ask_gemini(prompt)
-    reasons = [r.strip("- ") for r in raw_reasons.split("\n") if r.strip()]
-    selected_reason = st.radio("이유를 선택하세요:", reasons)
-    if st.button("확정하기", key="select_reason"):
-        st.session_state.reason = selected_reason
-        st.rerun()
+    reasons = [r.strip() for r in raw_reasons.split(",") if r.strip()]
+    cols = st.columns(4)
+    for i, reason in enumerate(reasons):
+        if cols[i % 4].button(reason):
+            st.session_state.reason = reason
+            st.rerun()
 
 # Step 3: 만화 생성
 elif st.session_state.reason:
@@ -128,7 +131,8 @@ elif st.session_state.reason:
 
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=14)
+    pdf.add_font('ArialUnicode', '', '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc', uni=True)
+    pdf.set_font("ArialUnicode", size=14)
     pdf.cell(200, 10, txt="감정 만화 생성 결과", ln=True, align="C")
     pdf.ln(10)
     pdf.multi_cell(0, 10, f"감정: {st.session_state.emotion}\n이유: {st.session_state.reason}\n날씨: {weather}")
@@ -137,7 +141,7 @@ elif st.session_state.reason:
         st.markdown(f"**컷 {i+1}**: {scene}")
         img_prompt = f"A colorful cartoon style illustration: {scene}"
         img_url = generate_image(img_prompt)
-        pdf.set_font("Arial", size=12)
+        pdf.set_font("ArialUnicode", size=12)
         pdf.multi_cell(0, 10, f"컷 {i+1}: {scene}")
         if "http" in img_url:
             st.image(img_url, caption=f"컷 {i+1}", use_column_width=True)
@@ -151,4 +155,5 @@ elif st.session_state.reason:
             st.download_button("📄 생성 결과 PDF 다운로드", f.read(), file_name="emotion_comic.pdf", mime="application/pdf")
 
     st.session_state.call_count += 1
+
 
