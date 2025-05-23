@@ -691,12 +691,8 @@ elif st.session_state.current_step == 2:
     
     st.markdown("---")
     
-    st.markdown("""
-    <div class="next-step-container">
-        <div class="next-step-emoji">📝</div>
-        <div class="next-step-text">좋은 상황 설명이에요! 이제 감정을 선택해볼까요?</div>
-    </div>
-    """, unsafe_allow_html=True)
+    # 다음 단계 안내를 Streamlit 네이티브로 변경
+    st.info("📝 좋은 상황 설명이에요! 이제 감정을 선택해볼까요?")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -788,65 +784,41 @@ elif st.session_state.current_step == 4:
             ai_response = ask_gemini(reason_check_prompt)
             
             if ai_response and "부적절" in ai_response:
-                st.markdown('''
-                <div style="background: #ffebee; border: 2px solid #f44336; padding: 1.5rem; border-radius: 15px; margin: 1rem 0;">
-                    🚨 <strong style="color: #d32f2f; font-size: 1.2rem;">부적절한 감정 표현이 감지되었습니다!</strong><br><br>
-                    
-                    <div style="background: #ffcdd2; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                        📚 <strong>감정 교육:</strong><br>
-                        감정의 이유를 표현할 때도 건전하고 교육적인 언어를 사용해야 해요.<br>
-                        부정적인 감정도 적절한 표현으로 나타낼 수 있답니다.
-                    </div>
-                    
-                    <strong style="color: #d32f2f;">✅ 이런 건전한 표현으로 바꿔주세요:</strong><br>
-                    • "친구가 나를 이해해주지 않아서 속상했어요"<br>
-                    • "기대했던 것과 달라서 실망스러웠어요"<br>
-                    • "새로운 도전이라 긴장되고 두려웠어요"<br>
-                    • "노력한 만큼 결과가 나와서 뿌듯했어요"<br>
-                    • "친구들과 함께 해서 더욱 즐거웠어요"
-                    
-                    <div style="margin-top: 1rem; padding: 0.8rem; background: #e3f2fd; border-radius: 8px;">
-                        💡 <strong>팁:</strong> 감정을 느낀 구체적이고 교육적인 이유를 써보세요!
-                    </div>
-                </div>
-                ''', unsafe_allow_html=True)
+                st.error("🚨 부적절한 감정 표현이 감지되었습니다!")
+                st.warning("""
+                **감정 교육**: 감정의 이유를 표현할 때도 건전하고 교육적인 언어를 사용해야 해요.
+                
+                **건전한 표현으로 바꿔주세요**:
+                - "친구가 나를 이해해주지 않아서 속상했어요"
+                - "기대했던 것과 달라서 실망스러웠어요"  
+                - "새로운 도전이라 긴장되고 두려웠어요"
+                - "노력한 만큼 결과가 나와서 뿌듯했어요"
+                - "친구들과 함께 해서 더욱 즐거웠어요"
+                """)
                 reason_valid = False
             elif ai_response and "적합" in ai_response:
                 if len(reason.strip()) >= 5:
-                    st.markdown('''
-                    <div style="background: #d4edda; border: 2px solid #27ae60; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                        ✅ <strong style="color: #155724;">감정을 훌륭하게 표현해주셨어요!</strong><br>
-                        이런 솔직하고 건전한 감정 표현이 좋은 교육 자료가 됩니다! 👏
-                    </div>
-                    ''', unsafe_allow_html=True)
+                    st.success("✅ 감정을 훌륭하게 표현해주셨어요! 이런 솔직하고 건전한 감정 표현이 좋은 교육 자료가 됩니다! 👏")
                     reason_valid = True
                 else:
                     reason_valid = False
             else:
                 # AI 응답이 애매하면 기본 키워드로 한번 더 체크
-                inappropriate_words = ["시발", "병신", "김정은", "트럼프"]
+                inappropriate_words = ["시발", "병신", "김정은", "트럼프", "앙착의와잡괴", "좆", "씨발", "개새끼"]
                 has_inappropriate = any(word in reason.lower() for word in inappropriate_words)
                 
                 if has_inappropriate:
-                    st.markdown('''
-                    <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                        🚨 <strong>부적절한 표현이 포함되어 있어요!</strong>
-                    </div>
-                    ''', unsafe_allow_html=True)
+                    st.error("🚨 부적절한 표현이 포함되어 있어요!")
                     reason_valid = False
                 else:
                     reason_valid = len(reason.strip()) >= 5
         except:
             # AI 검증 실패 시 기본 키워드 체크
-            inappropriate_words = ["시발", "병신", "김정은", "트럼프"]
+            inappropriate_words = ["시발", "병신", "김정은", "트럼프", "앙착의와잡괴", "좆", "씨발", "개새끼"]
             has_inappropriate = any(word in reason.lower() for word in inappropriate_words)
             
             if has_inappropriate:
-                st.markdown('''
-                <div style="background: #ffebee; border: 1px solid #f44336; padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                    🚨 <strong>부적절한 표현이 포함되어 있어요!</strong>
-                </div>
-                ''', unsafe_allow_html=True)
+                st.error("🚨 부적절한 표현이 포함되어 있어요!")
                 reason_valid = False
             else:
                 reason_valid = len(reason.strip()) >= 5
@@ -873,12 +845,8 @@ elif st.session_state.current_step == 4:
     
     st.markdown("---")
     
-    st.markdown("""
-    <div class="next-step-container">
-        <div class="next-step-emoji">🎨</div>
-        <div class="next-step-text">감정의 이유까지 완성! 이제 멋진 스토리보드를 만들어볼까요?</div>
-    </div>
-    """, unsafe_allow_html=True)
+    # 다음 단계 안내를 Streamlit 네이티브로 변경
+    st.info("🎨 감정의 이유까지 완성! 이제 멋진 스토리보드를 만들어볼까요?")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -997,7 +965,7 @@ elif st.session_state.current_step == 5:
                             clean_prompt = clean_prompt.split(":")[-1].strip()
                         
                         safe_prompt = f"Safe for children, educational content. Cute anime/manga style illustration of a {character_desc} ({age_desc}) showing {st.session_state.emotion} emotion. {clean_prompt}. Wholesome, school-appropriate, consistent character design, colorful, child-friendly art style."
-                        st.session_state.scene_prompts.append(safe_prompt)
+                        st.session_state.scene_prompts.append(clean_prompt)
                     else:
                         default_prompt = f"Safe for children, educational content. Cute anime/manga style illustration of a {character_desc} ({age_desc}) showing {st.session_state.emotion} emotion in this scene: {scene}. Wholesome, school-appropriate, consistent character design, colorful, child-friendly art style."
                         st.session_state.scene_prompts.append(default_prompt)
@@ -1109,12 +1077,7 @@ Safety requirements: Safe for children, educational content, wholesome, school-a
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown('<div class="watermark">서울가동초 백인규</div>', unsafe_allow_html=True)
-
+# 워터마크와 푸터도 Streamlit 네이티브로 변경
 st.markdown("---")
-st.markdown(
-    "<div style='text-align: center; color: #000000; padding: 1rem;'>"
-    "📋 4컷 만화 스토리보드 생성기 | 감정을 표현하고 창의성을 키워보세요!"
-    "</div>", 
-    unsafe_allow_html=True
-)
+st.markdown("**서울가동초 백인규**", unsafe_allow_html=False)
+st.markdown("📋 4컷 만화 스토리보드 생성기 | 감정을 표현하고 창의성을 키워보세요!")
